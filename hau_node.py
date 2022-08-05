@@ -25,9 +25,8 @@ class HAUNode(BaseNode):
 
 if __name__ == "__main__":
     network1 = [
-        {"address": "tcp://10.9.0.7:5669",
-        "address_2": "tcp://127.0.0.1:5679"}
+        {"address": "tcp://10.9.0.12:5666",}
     ]
-    n1 = HAUNode(network1[0]['address'], list_of_nodes=list_of_nodes1)
+    n1 = HAUNode(network1[0]['address'], list_of_nodes=network1)
     n1.start()
     n1.join()
