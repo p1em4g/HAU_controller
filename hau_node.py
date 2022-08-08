@@ -16,7 +16,6 @@ class HAUNode(BaseNode):
         self.hau_handler = HAUHandler(
             name="hau_handler",
         )
-
         self.add_device(self.hau_handler)
 
     def custom_preparation(self):
