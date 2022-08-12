@@ -22,7 +22,7 @@ class HAUHandler(BaseDevice):
         pump_mode = Command(
             name="pump_mode",
             annotation="pump_mode",
-            output_kwargs={"pump_number": "int", "state": "int"},
+            input_kwargs={"pump_number": "int", "state": "int"},
             action = self.pump_controller
         )
         self.add_command(pump_mode)
