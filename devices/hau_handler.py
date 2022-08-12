@@ -31,7 +31,7 @@ class HAUHandler(BaseDevice):
         valve_mode = Command(
             name="valve_mode",
             annotation="valve_mode",
-            output_kwargs={"valve_number": "int", "state": "int"},
+            input_kwargs={"valve_number": "int", "state": "int"},
             action=self.valve_controller
         )
         self.add_command(valve_mode)
@@ -40,7 +40,7 @@ class HAUHandler(BaseDevice):
         led_mode = Command(
             name="led_mode",
             annotation="led_mode",
-            output_kwargs={"board_number": "str", "red_led_state": "str", "white_led_state": "str"},
+            input_kwargs={"board_number": "str", "red_led_state": "str", "white_led_state": "str"},
             action=self.led_controller
         )
         self.add_command(led_mode)
@@ -49,7 +49,7 @@ class HAUHandler(BaseDevice):
         fan_mode = Command(
             name="fan_mode",
             annotation="fan_mode",
-            output_kwargs={"board_number": "str", "state": "str"},
+            input_kwargs={"board_number": "str", "state": "str"},
             action=self.fan_controller
         )
         self.add_command(fan_mode)
@@ -58,7 +58,7 @@ class HAUHandler(BaseDevice):
         read_led_temp = Command(
             name="read_led_temp",
             annotation="read_led_temp",
-            output_kwargs={"board_number": "str", "sensor_number": "int"},
+            input_kwargs={"board_number": "str", "sensor_number": "int"},
             action=self.led_temp_reader
         )
         self.add_command(read_led_temp)
@@ -67,7 +67,7 @@ class HAUHandler(BaseDevice):
         get_pressure = Command(
             name="get_pressure",
             annotation="get_pressure",
-            output_kwargs={"sensor_number": "int"},
+            input_kwargs={"sensor_number": "int"},
             action=self.pressure_getter
         )
         self.add_command(get_pressure)
@@ -85,7 +85,7 @@ class HAUHandler(BaseDevice):
             name="write_conductometer_params",
             annotation="write_conductometer_params",
             action=self.conductometer_params_writer,
-            output_kwargs = {"arg": "int"},
+            input_kwargs = {"arg": "int"},
         )
         self.add_command(write_conductometer_params)
 
