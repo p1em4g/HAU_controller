@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import time
 from plexus.nodes.node import BaseNode, PeriodicCallback
-import serial
+
 from devices.hau_handler import HAUHandler
+
+import config
+
 
 class HAUNode(BaseNode):
     """
@@ -23,9 +23,8 @@ class HAUNode(BaseNode):
 
 
 if __name__ == "__main__":
-    network1 = [
-        {"address": "tcp://10.9.0.12:5666",}
-    ]
-    n1 = HAUNode(network1[0]['address'], list_of_nodes=network1)
+    network = config.network or [{"address": "tcp://10.9.0.12:5666",}]
+
+    n1 = HAUNode(network[0]['address'], list_of_nodes=network)
     n1.start()
     n1.join()
