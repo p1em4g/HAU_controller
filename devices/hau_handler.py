@@ -1,4 +1,4 @@
-import time, sys, os
+import time
 
 from plexus.nodes.command import Command
 from plexus.devices.base_device import BaseDevice
@@ -21,11 +21,7 @@ class HAUHandler(BaseDevice):
         # команда для управления насосами
         pump_mode = Command(
             name="pump_mode",
-            annotation="""
-                pump_mode
-                pump_number: 1 to 6
-                state: 0 or 1      
-            """,
+            annotation="pump_number: 1 to 6, state: 0 or 1",
             input_kwargs={"pump_number": "int", "state": "int"},  #state 0 or 1
             output_kwargs={"answer": "str"},
             action = self.pump_controller
@@ -35,11 +31,7 @@ class HAUHandler(BaseDevice):
         # команда для управления клапанами
         valve_mode = Command(
             name="valve_mode",
-            annotation="""
-                valve_mode
-                valve_number: 1 to 6
-                state: 0 or 1      
-            """,
+            annotation="valve_number: 1 to 6, state: 0 or 1",
             input_kwargs={"valve_number": "int", "state": "int"}, #state 0 or 1
             output_kwargs={"answer": "str"},
             action=self.valve_controller
@@ -49,11 +41,7 @@ class HAUHandler(BaseDevice):
         # команда для управления светодиодами
         led_mode = Command(
             name="led_mode",
-            annotation="""
-                led_mode
-                board_number: 8C or 8E
-                led_state: 00 to FF      
-            """,
+            annotation="board_number: 8C or 8E, led_state: 00 to FF",
             input_kwargs={"board_number": "str", "red_led_state": "str", "white_led_state": "str"},  #board_number 8C or 8E,  led_state 00 - FF
             output_kwargs={"answer": "str"},
             action=self.led_controller
@@ -63,11 +51,7 @@ class HAUHandler(BaseDevice):
         #команда для управления вентилятором
         fan_mode = Command(
             name="fan_mode",
-            annotation="""
-                fan_mode
-                board_number: 8C or 8E
-                state: 00 to FF      
-            """,
+            annotation="board_number: 8C or 8E, state: 00 to FF",
             input_kwargs={"board_number": "str", "state": "str"},   #board_number 8C or 8E, state 00 - FF
             output_kwargs={"answer": "str"},
             action=self.fan_controller
@@ -77,11 +61,7 @@ class HAUHandler(BaseDevice):
         # команда для чтения данных с датчиков температур на платах освещения
         read_led_temp = Command(
             name="read_led_temp",
-            annotation="""
-                read_led_temp
-                board_number: 8C or 8E
-                sensor_number: 0 or 1      
-            """,
+            annotation="board_number: 8C or 8E, sensor_number: 0 or 1",
             input_kwargs={"board_number": "str", "sensor_number": "int"}, #board_number 8C or 8E, sensor_number 1 или 0
             output_kwargs={"answer": "str"},
             action=self.led_temp_reader
@@ -91,10 +71,7 @@ class HAUHandler(BaseDevice):
         # команда для чтения данных с датчиков давления
         get_pressure = Command(
             name="get_pressure",
-            annotation="""
-                get_pressure
-                sensor_number: 1 to 4    
-            """,
+            annotation="sensor_number: 1 to 4",
             input_kwargs={"sensor_number": "int"},
             output_kwargs={"answer": "str"},
             action=self.pressure_getter
