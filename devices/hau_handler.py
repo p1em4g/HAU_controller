@@ -23,6 +23,7 @@ class HAUHandler(BaseDevice):
             name="pump_mode",
             annotation="pump_mode",
             input_kwargs={"pump_number": "int", "state": "int"},
+            output_kwargs={"answer": "str"},
             action = self.pump_controller
         )
         self.add_command(pump_mode)
@@ -32,6 +33,7 @@ class HAUHandler(BaseDevice):
             name="valve_mode",
             annotation="valve_mode",
             input_kwargs={"valve_number": "int", "state": "int"},
+            output_kwargs={"answer": "str"},
             action=self.valve_controller
         )
         self.add_command(valve_mode)
@@ -41,6 +43,7 @@ class HAUHandler(BaseDevice):
             name="led_mode",
             annotation="led_mode",
             input_kwargs={"board_number": "str", "red_led_state": "str", "white_led_state": "str"},
+            output_kwargs={"answer": "str"},
             action=self.led_controller
         )
         self.add_command(led_mode)
@@ -50,6 +53,7 @@ class HAUHandler(BaseDevice):
             name="fan_mode",
             annotation="fan_mode",
             input_kwargs={"board_number": "str", "state": "str"},
+            output_kwargs={"answer": "str"},
             action=self.fan_controller
         )
         self.add_command(fan_mode)
@@ -59,6 +63,7 @@ class HAUHandler(BaseDevice):
             name="read_led_temp",
             annotation="read_led_temp",
             input_kwargs={"board_number": "str", "sensor_number": "int"},
+            output_kwargs={"answer": "str"},
             action=self.led_temp_reader
         )
         self.add_command(read_led_temp)
@@ -68,6 +73,7 @@ class HAUHandler(BaseDevice):
             name="get_pressure",
             annotation="get_pressure",
             input_kwargs={"sensor_number": "int"},
+            output_kwargs={"answer": "str"},
             action=self.pressure_getter
         )
         self.add_command(get_pressure)
@@ -76,6 +82,7 @@ class HAUHandler(BaseDevice):
         get_conductivity = Command(
             name="get_conductivity",
             annotation="get_conductivity",
+            output_kwargs={"answer": "str"},
             action=self.conductivity_getter
         )
         self.add_command(get_conductivity)
@@ -86,6 +93,7 @@ class HAUHandler(BaseDevice):
             annotation="write_conductometer_params",
             action=self.conductometer_params_writer,
             input_kwargs = {"arg": "int"},
+            output_kwargs={"answer": "str"},
         )
         self.add_command(write_conductometer_params)
 
@@ -107,7 +115,7 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
-
+            return answer
         except Exception as e:
             self._status = "error\n{}".format(e)
             return e
@@ -119,7 +127,7 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
-
+            return answer
         except Exception as e:
             self._status = "error\n{}".format(e)
             return e
@@ -131,7 +139,7 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
-
+            return answer
         except Exception as e:
             self._status = "error\n{}".format(e)
             return e
@@ -143,7 +151,7 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
-
+            return answer
         except Exception as e:
             self._status = "error\n{}".format(e)
             return e
@@ -157,6 +165,7 @@ class HAUHandler(BaseDevice):
             print(answer)
             print("------------------------")
             self._status = "works\n{}".format(answer)
+            return answer
 
         except Exception as e:
             self._status = "error\n{}".format(e)
@@ -171,6 +180,7 @@ class HAUHandler(BaseDevice):
             print(answer)
             print("------------------------")
             self._status = "works\n{}".format(answer)
+            return answer
 
         except Exception as e:
             self._status = "error\n{}".format(e)
@@ -185,6 +195,7 @@ class HAUHandler(BaseDevice):
             print(answer)
             print("------------------------")
             self._status = "works\n{}".format(answer)
+            return answer
 
         except Exception as e:
             self._status = "error\n{}".format(e)
@@ -197,7 +208,7 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
-
+            return answer
         except Exception as e:
             self._status = "error\n{}".format(e)
             return e
