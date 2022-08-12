@@ -22,7 +22,7 @@ class HAUHandler(BaseDevice):
         pump_mode = Command(
             name="pump_mode",
             annotation="pump_mode",
-            input_kwargs={"pump_number": "int", "state": "int"},
+            input_kwargs={"pump_number": "int", "state": "int"},  #state 0 or 1
             output_kwargs={"answer": "str"},
             action = self.pump_controller
         )
@@ -32,7 +32,7 @@ class HAUHandler(BaseDevice):
         valve_mode = Command(
             name="valve_mode",
             annotation="valve_mode",
-            input_kwargs={"valve_number": "int", "state": "int"},
+            input_kwargs={"valve_number": "int", "state": "int"}, #state 0 or 1
             output_kwargs={"answer": "str"},
             action=self.valve_controller
         )
@@ -42,7 +42,7 @@ class HAUHandler(BaseDevice):
         led_mode = Command(
             name="led_mode",
             annotation="led_mode",
-            input_kwargs={"board_number": "str", "red_led_state": "str", "white_led_state": "str"},
+            input_kwargs={"board_number": "str", "red_led_state": "str", "white_led_state": "str"},  #board_number 8C or 8E,  led_state 00 - FF
             output_kwargs={"answer": "str"},
             action=self.led_controller
         )
@@ -52,7 +52,7 @@ class HAUHandler(BaseDevice):
         fan_mode = Command(
             name="fan_mode",
             annotation="fan_mode",
-            input_kwargs={"board_number": "str", "state": "str"},
+            input_kwargs={"board_number": "str", "state": "str"},   #board_number 8C or 8E, state 00 - FF
             output_kwargs={"answer": "str"},
             action=self.fan_controller
         )
@@ -62,7 +62,7 @@ class HAUHandler(BaseDevice):
         read_led_temp = Command(
             name="read_led_temp",
             annotation="read_led_temp",
-            input_kwargs={"board_number": "str", "sensor_number": "int"},
+            input_kwargs={"board_number": "str", "sensor_number": "int"}, #board_number 8C or 8E, sensor_number 1 или 0
             output_kwargs={"answer": "str"},
             action=self.led_temp_reader
         )
@@ -161,9 +161,7 @@ class HAUHandler(BaseDevice):
         try:
             command = "o{0}20000{1}\n".format(board_number, sensor_number)
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
-            print("------------------------")
-            print(answer)
-            print("------------------------")
+
             self._status = "works\n{}".format(answer)
             return answer
 
@@ -176,9 +174,7 @@ class HAUHandler(BaseDevice):
         try:
             command = "s{}\n".format(sensor_number)
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
-            print("------------------------")
-            print(answer)
-            print("------------------------")
+
             self._status = "works\n{}".format(answer)
             return answer
 
@@ -191,9 +187,7 @@ class HAUHandler(BaseDevice):
         try:
             command = "r\n"
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
-            print("------------------------")
-            print(answer)
-            print("------------------------")
+
             self._status = "works\n{}".format(answer)
             return answer
 
