@@ -107,7 +107,7 @@ class HAUHandler(BaseDevice):
             annotation="get_conductivity",
             output_kwargs={"answer": "str"},
             action=self.conductivity_getter
-        )пш
+        )
         self.add_command(get_conductivity)
 
         #команда для записи конфигурационных параметров для платы кондуктомтера (хз что это значит)
