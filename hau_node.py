@@ -23,7 +23,7 @@ class HAUNode(BaseNode):
 
 
 if __name__ == "__main__":
-    network = config.network or [{"address": "tcp://10.9.0.12:5666",}]
+    network = config.network
 
     n1 = HAUNode(network[0]['address'], list_of_nodes=network)
     n1.start()
