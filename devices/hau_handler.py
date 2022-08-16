@@ -13,7 +13,7 @@ class HAUHandler(BaseDevice):
         super().__init__(name)
         self._description = "this is device to control humidification and aeration unit"
 
-        dev = "/dev/ttyUSB0"
+        dev = "/dev/serial/by-idusb-1a86_USB2.0-Serial-if00-port0"
         baud = 9600
         timeout = 1
         self.ser = serial.Serial(port=dev, baudrate=baud, timeout=timeout)
@@ -39,16 +39,27 @@ class HAUHandler(BaseDevice):
         )
         self.add_command(valve_mode)
 
-        # команда для управления светодиодами
-        led_mode = Command(
-            name="led_mode",
+        # команда для управления красными светодиодами
+        red_led_mode = Command(
+            name="red_led_mode",
             annotation="board_number: 8C or 8E, led_state: 00 to FF",
             # board_number # 8C or 8E,  led_state 00 - FF
-            input_kwargs={"board_number": "str", "red_led_state": "str", "white_led_state": "str"},
+            input_kwargs={"board_number": "str", "red_led_state": "str"},
             output_kwargs={"answer": "str"},
-            action=self.led_controller
+            action=self.red_led_controller
         )
-        self.add_command(led_mode)
+        self.add_command(red_led_mode)
+
+        # команда для управления белыми светодиодами
+        white_led_mode = Command(
+            name="white_led_mode",
+            annotation="board_number: 8C or 8E, led_state: 00 to FF",
+            # board_number # 8C or 8E,  led_state 00 - FF
+            input_kwargs={"board_number": "str", "white_led_state": "str"},
+            output_kwargs={"answer": "str"},
+            action=self.white_led_controller
+        )
+        self.add_command(white_led_mode)
 
         # команда для управления вентилятором
         fan_mode = Command(
@@ -153,10 +164,23 @@ class HAUHandler(BaseDevice):
             self._status = "error\n{}".format(e)
             return e
 
-    # метод для отправки команд cветодиодам
-    def led_controller(self, board_number, red_led_state, white_led_state):
+    # метод для отправки команд белым cветодиодам
+    def white_led_controller(self, board_number, white_led_state):
         try:
-            command = "o{0}80{1}{2}\n".format(board_number, red_led_state, white_led_state)
+            command = "o{0}00{1}\n".format(board_number, white_led_state)
+            answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
+
+            self._status = "works\n{}".format(answer)
+            return answer
+        except Exception as e:
+            self._status = "error\n{}".format(e)
+            return e
+
+
+    # метод для отправки команд красным cветодиодам
+    def red_led_controller(self, board_number, red_led_state):
+        try:
+            command = "o{0}80{1}00\n".format(board_number, red_led_state)
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
