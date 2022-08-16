@@ -167,7 +167,7 @@ class HAUHandler(BaseDevice):
     # метод для отправки команд белым cветодиодам
     def white_led_controller(self, board_number, white_led_state):
         try:
-            command = "o{0}00{1}\n".format(board_number, white_led_state)
+            command = "o{0}8000{1}\n".format(board_number, white_led_state)
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
