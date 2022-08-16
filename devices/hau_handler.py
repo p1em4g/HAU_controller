@@ -5,6 +5,7 @@ from plexus.devices.base_device import BaseDevice
 import serial
 
 from database_handler import MySQLdbHandler
+from hau_answers_parser import HAUAnswersParser
 import config
 
 
@@ -39,6 +40,10 @@ class HAUHandler(BaseDevice):
         )
         self.add_command(valve_mode)
 
+        # переменные, которые хранят состояние светодиодов
+        self.red_led_state = "00"
+        self.white_led_state = "00"
+
         # команда для управления красными светодиодами
         red_led_mode = Command(
             name="red_led_mode",
@@ -49,10 +54,6 @@ class HAUHandler(BaseDevice):
             action=self.red_led_controller
         )
         self.add_command(red_led_mode)
-
-        #переменные, которые хранят состояние светодиодов
-        self.red_led_state = "00"
-        self.white_led_state = "00"
 
         # команда для управления белыми светодиодами
         white_led_mode = Command(
@@ -149,7 +150,7 @@ class HAUHandler(BaseDevice):
 
             self._status = "works\n{}".format(answer)
 
-            self.db_handler.add_data_in_table("pump{}".format(pump_number), int(state))
+            self.db_handler.add_data_in_table("pump{}".format(pump_number), HAUAnswersParser.pump_answer_parser(answer))
 
             return answer
         except Exception as e:
