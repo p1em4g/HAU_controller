@@ -149,11 +149,11 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
-            print("#######################################3")
-            print(answer)
-            print(HAUAnswersParser.pump_answer_parser(answer))
-            print("#######################################3")
-            self.db_handler.add_data_in_table("pump{}".format(pump_number), int(HAUAnswersParser.pump_answer_parser(answer)))
+            # print("#######################################3")
+            # print(answer)
+            # print(HAUAnswersParser.pump_answer_parser(answer))
+            # print("#######################################3")
+            self.db_handler.add_data_in_table("pump{}".format(pump_number), int(state))
 
             return answer
         except Exception as e:
