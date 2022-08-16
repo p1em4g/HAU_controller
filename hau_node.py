@@ -15,14 +15,16 @@ class HAUNode(BaseNode):
         super().__init__(endpoint, list_of_nodes, is_daemon)
         self._annotation = "humidification and aeration unit"
 
+        # cоздаем базу данных (если она не существует) с навзанием как в конфиге
+        db_handler = MySQLdbHandler(config.db_params)
+        db_handler.create_database()
+
         self.hau_handler = HAUHandler(
             name="hau_handler",
         )
         self.add_device(self.hau_handler)
 
-        #cоздаем базу данных (если она не существует) с навзанием как в конфиге
-        db_handler = MySQLdbHandler(config.db_params)
-        db_handler.create_database()
+
 
     def custom_preparation(self):
        pass
