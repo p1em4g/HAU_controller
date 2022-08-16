@@ -4,6 +4,7 @@ import pprint
 
 import config
 
+
 class CommandSender:
     @classmethod
     def send_command(cls, addr, device, command, data=None, network=None, endpoint=None):
@@ -23,6 +24,7 @@ class CommandSender:
 
         return ans
 
+
 if __name__ == "__main__":
     addr = "tcp://10.9.0.12:5666"
     device = "hau_handler"
@@ -34,14 +36,15 @@ if __name__ == "__main__":
     ]
     endpoint = "tcp://10.9.0.7:5668"
 
-    ans = CommandSender.send_command(addr=addr, device=device, command=command, data=data, network=network, endpoint=endpoint)
+    ans = CommandSender.send_command(
+        addr=addr,
+        device=device,
+        command=command,
+        data=data,
+        network=network,
+        endpoint=endpoint
+    )
     print(ans)
     print(Message.parse_zmq_msg(ans))
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(Message.parse_zmq_msg(ans))
-
-
-
-
-
-

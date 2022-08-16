@@ -2,6 +2,8 @@ from plexus.nodes.node import BaseNode, PeriodicCallback
 
 from devices.hau_handler import HAUHandler
 
+from database_handler_lab_admin.database_handler import MySQLdbHandler
+
 import config
 
 
@@ -17,6 +19,10 @@ class HAUNode(BaseNode):
             name="hau_handler",
         )
         self.add_device(self.hau_handler)
+
+        #cоздаем базу данных (если она не существует) с навзанием как в конфиге
+        db_handler = MySQLdbHandler(config.db_params)
+        db_handler.create_database()
 
     def custom_preparation(self):
        pass
