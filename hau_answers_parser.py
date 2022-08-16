@@ -1,11 +1,20 @@
 import re
 
 class HAUAnswersParser:
+    # @classmethod
+    # def pump_answer_parser(cls, data_str):
+    #     if re.search("b'Pump #.+ - OFF", data_str,):
+    #         return 0
+    #     elif re.search("b'Pump #.+ - ON", data_str,):
+    #         return 1
+    #     else:
+    #         return None
+
     @classmethod
     def pump_answer_parser(cls, data_str):
-        if re.search("b'Pump #.+ - OFF", data_str,):
+        if "OFF" in data_str:
             return 0
-        elif re.search("b'Pump #.+ - ON", data_str,):
+        elif "ON" in data_str:
             return 1
         else:
             return None
