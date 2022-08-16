@@ -151,14 +151,14 @@ class HAUHandler(BaseDevice):
             self._status = "works\n{}".format(answer)
 
 
-            self.db_handler.add_data_in_table("pump{}".format(pump_number), int(HAUAnswersParser.pump_answer_parser(answer)))
-            print("#####################################################3")
-            print("answer ", answer)
-            print("#####################################################3")
-            print("parse_ans ", HAUAnswersParser.pump_answer_parser(answer))
-            print("#####################################################3")
-            print(str(HAUAnswersParser.pump_answer_parser(answer)))
-            print("#####################################################3")
+            self.db_handler.add_data_in_table("pump{}".format(pump_number), int(state)
+            # print("#####################################################3")
+            # print("answer ", answer)
+            # print("#####################################################3")
+            # print("parse_ans ", HAUAnswersParser.pump_answer_parser(answer))
+            # print("#####################################################3")
+            # print(str(HAUAnswersParser.pump_answer_parser(answer)))
+            # print("#####################################################3")
 
             return answer
         except Exception as e:
