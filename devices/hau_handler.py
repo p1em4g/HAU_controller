@@ -4,7 +4,7 @@ from plexus.nodes.command import Command
 from plexus.devices.base_device import BaseDevice
 import serial
 
-from database_handler_lab_admin.database_handler import MySQLdbHandler
+from database_handler import MySQLdbHandler
 import config
 
 

@@ -2,7 +2,7 @@ from plexus.nodes.node import BaseNode, PeriodicCallback
 
 from devices.hau_handler import HAUHandler
 
-from database_handler_lab_admin.database_handler import MySQLdbHandler
+from database_handler import MySQLdbHandler
 
 import config
 
