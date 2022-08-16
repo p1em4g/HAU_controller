@@ -15,7 +15,7 @@ class MySQLdbHandler:
              'experiment_name':1'
              }
         """
-        self._db_name = "exp" + str(db_params["experiment_name"])
+        self._db_name = "exp_" + str(db_params["experiment_name"])
         self._db_params = db_params
         #pass
 
