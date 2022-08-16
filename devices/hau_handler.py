@@ -151,7 +151,7 @@ class HAUHandler(BaseDevice):
             self._status = "works\n{}".format(answer)
 
 
-            self.db_handler.add_data_in_table("pump{}".format(pump_number), int(state)
+            self.db_handler.add_data_in_table("pump{}".format(pump_number), int(state))
             # print("#####################################################3")
             # print("answer ", answer)
             # print("#####################################################3")
