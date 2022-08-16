@@ -50,6 +50,10 @@ class HAUHandler(BaseDevice):
         )
         self.add_command(red_led_mode)
 
+        #переменные, которые хранят состояние светодиодов
+        self.red_led_state = "00"
+        self.white_led_state = "00"
+
         # команда для управления белыми светодиодами
         white_led_mode = Command(
             name="white_led_mode",
@@ -167,7 +171,8 @@ class HAUHandler(BaseDevice):
     # метод для отправки команд белым cветодиодам
     def white_led_controller(self, board_number, white_led_state):
         try:
-            command = "o{0}8000{1}\n".format(board_number, white_led_state)
+            self.white_led_state = white_led_state
+            command = "o{0}80{1}{2}\n".format(board_number, self.red_led_state, self.white_led_state)
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
@@ -180,7 +185,8 @@ class HAUHandler(BaseDevice):
     # метод для отправки команд красным cветодиодам
     def red_led_controller(self, board_number, red_led_state):
         try:
-            command = "o{0}80{1}00\n".format(board_number, red_led_state)
+            self.red_led_state = red_led_state
+            command = "o{0}80{1}{2}\n".format(board_number, self.red_led_state, self.white_led_state)
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
