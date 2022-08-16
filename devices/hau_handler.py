@@ -153,7 +153,10 @@ class HAUHandler(BaseDevice):
             print("#####################################################3")
             print("answer1 ", answer)
             print("#####################################################3")
-            self.db_handler.add_data_in_table("pump{}".format(pump_number), HAUAnswersParser.pump_answer_parser(answer))
+            print("parse_ans ", HAUAnswersParser.pump_answer_parser(answer))
+            print("#####################################################3")
+
+            self.db_handler.add_data_in_table("pump{}".format(pump_number), int(HAUAnswersParser.pump_answer_parser(answer)))
 
             print("#####################################################3")
             print("answer2 ", answer)
