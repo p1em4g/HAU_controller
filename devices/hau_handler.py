@@ -13,7 +13,7 @@ class HAUHandler(BaseDevice):
         super().__init__(name)
         self._description = "this is device to control humidification and aeration unit"
 
-        dev = "/dev/serial/by-idusb-1a86_USB2.0-Serial-if00-port0"
+        dev = "/dev/serial/by-id/usb-1a86_USB2.0-Serial-if00-port0"
         baud = 9600
         timeout = 1
         self.ser = serial.Serial(port=dev, baudrate=baud, timeout=timeout)
