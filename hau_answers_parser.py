@@ -21,7 +21,7 @@ class HAUAnswersParser:
 
 
 if __name__ == "__main__":
-    res = HAUAnswersParser.pump_answer_parser("'data': (b'Pump #6 - ON \\r\\n',)")
+    res = HAUAnswersParser.pump_answer_parser("(b'Pump #6 - OFF\r\n',)")
     print(res)
 
     res = HAUAnswersParser.valve_answer_parser("# 'data': (b'Valve #5 - CLOSE\\r\\n',))")
