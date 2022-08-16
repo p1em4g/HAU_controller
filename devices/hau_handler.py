@@ -146,26 +146,12 @@ class HAUHandler(BaseDevice):
     def pump_controller(self, pump_number, state,):
         try:
             command = "p{0}{1}\n".format(pump_number, state)
-            answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
+            answer = str(HAUHandler.send_command(com=command, serial_dev=self.ser))
 
             self._status = "works\n{}".format(answer)
 
-            print("#####################################################3")
-            print("answer1 ", answer)
-            print("#####################################################3")
-            print("parse_ans ", HAUAnswersParser.pump_answer_parser(answer))
-            print("#####################################################3")
-
-            self.db_handler.add_data_in_table("pump{}".format(pump_number), int(HAUAnswersParser.pump_answer_parser(answer)))
-
-            print("#####################################################3")
-            print("answer2 ", answer)
-            print("#####################################################3")
-            print("parse_ans ", HAUAnswersParser.pump_answer_parser(answer))
-            print("#####################################################3")
-            print(str(HAUAnswersParser.pump_answer_parser(answer)))
-            print("#####################################################3")
-            print("answer3 ", answer)
+            self.db_handler.add_data_in_table("pump{}".format(pump_number),
+                                              int(HAUAnswersParser.pump_answer_parser(answer)))
 
             return answer
         except Exception as e:
