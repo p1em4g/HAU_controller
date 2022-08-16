@@ -2,6 +2,7 @@ import time
 
 from plexus.nodes.command import Command
 from plexus.devices.base_device import BaseDevice
+from plexus.nodes.message import Message
 import serial
 
 from database_handler import MySQLdbHandler
@@ -149,8 +150,10 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
-
-            self.db_handler.add_data_in_table("pump{}".format(pump_number), HAUAnswersParser.pump_answer_parser(answer))
+            print("#######################################3")
+            print(answer)
+            print("#######################################3")
+            self.db_handler.add_data_in_table("pump{}".format(pump_number), int(HAUAnswersParser.pump_answer_parser(Message.parse_zmq_msg(answer))))
 
             return answer
         except Exception as e:
