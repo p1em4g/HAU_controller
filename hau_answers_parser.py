@@ -1,14 +1,4 @@
-import re
-
 class HAUAnswersParser:
-    # @classmethod
-    # def pump_answer_parser(cls, data_str):
-    #     if re.search("b'Pump #.+ - OFF", data_str,):
-    #         return 0
-    #     elif re.search("b'Pump #.+ - ON", data_str,):
-    #         return 1
-    #     else:
-    #         return None
 
     @classmethod
     def pump_answer_parser(cls, data_str):
@@ -21,9 +11,9 @@ class HAUAnswersParser:
 
     @classmethod
     def valve_answer_parser(cls, data_str):
-        if re.search("b'Valve #.+ - CLOSE", data_str, ):
+        if "CLOSE" in data_str:
             return 0
-        elif re.search("b'Valve #.+ - OPEN", data_str, ):
+        elif "OPEN" in data_str:
             return 1
         else:
             return None
@@ -41,3 +31,14 @@ if __name__ == "__main__":
 # 'data': "(b'Valve #5 - CLOSE\\r\\n',)",
 # b'Valve #5 - CLOSE
 # 'data': "(b'usart cmd (  addr: 0x8E, cmd: 0x80 )\\r\\n',)",
+
+# red
+# b'usart cmd (  addr: 0x8C, cmd: 0x80 )\\r\\n',
+# b'usart cmd (  addr: 0x8C, cmd: 0x80 )\\r\\n',
+# b'usart cmd (  addr: 0x8E, cmd: 0x80 )\\r\\n',
+# white
+# b'usart cmd (  addr: 0x8C, cmd: 0x80 )\\r\\n',
+
+
+# b'usart cmd (  addr: 0x8E, cmd: 0x20 )\\r\\n    posv_temp: 23.84 ( "
+#           "dat1: 0xAA, dat2: 0xAA, dat3: 0x64, dat'

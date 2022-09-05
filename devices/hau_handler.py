@@ -120,16 +120,34 @@ class HAUHandler(BaseDevice):
         # cоздаем таблицы в базе для каждого сенсора
         self.db_handler = MySQLdbHandler(config.db_params)
 
-        # this creates (7 - 1) pumps in loop
-        for num in range(1,7):
+        # this creates (7 - 1) pump tables in loop
+        for num in range(1, 7):
             self.db_handler.create_data_table(sensor_name="pump{}".format(num))
 
-        # db_handler.create_data_table("valve")
-        # db_handler.create_data_table("led")  # надо разделить на две команды
-        # db_handler.create_data_table("fan")
-        # db_handler.create_data_table("led_temp") # будет несколько таблиц
-        # db_handler.create_data_table("pressure") # будет несколько таблиц
-        # db_handler.create_data_table("conductivity")
+        # this creates (7 - 1) valve tables in loop
+        for num in range(1, 7):
+            self.db_handler.create_data_table(sensor_name="valve{}".format(num))
+
+        self.db_handler.create_data_table(sensor_name="red_led_8C")
+        self.db_handler.create_data_table(sensor_name="white_led_8C")
+
+        self.db_handler.create_data_table(sensor_name="red_led_8E")
+        self.db_handler.create_data_table(sensor_name="white_led_8E")
+
+        self.db_handler.create_data_table(sensor_name="fan_8C")
+
+        self.db_handler.create_data_table(sensor_name="fan_8E")
+
+        self.db_handler.create_data_table(sensor_name="temp1_8C")
+        self.db_handler.create_data_table(sensor_name="temp2_8C")
+
+        self.db_handler.create_data_table(sensor_name="temp1_8E")
+        self.db_handler.create_data_table(sensor_name="temp2_8E")
+
+        for num in range(1, 5):
+            self.db_handler.create_data_table(sensor_name="pressure{}".format(num))
+
+        self.db_handler.create_data_table(sensor_name="conductivity")
 
     # метод класса для отправки команд в последовательный порт (надо вынести в другой файл)
     @classmethod
@@ -165,12 +183,17 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
+
+            self.db_handler.add_data_in_table("pump{}".format(valve_number),
+                                              int(HAUAnswersParser.valve_answer_parser(answer)))
+
             return answer
         except Exception as e:
             self._status = "error\n{}".format(e)
             return e
 
     # метод для отправки команд белым cветодиодам
+    # table name - white_led_{board_number}
     def white_led_controller(self, board_number, white_led_state):
         try:
             self.white_led_state = white_led_state
@@ -178,6 +201,12 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
+
+            # проверка на то, что в ответе есть кусок ожидаемой нами строки,
+            # строка ответа одинаковая для всех команд на светодиоды
+            if "cmd: 0x80" in str(answer):
+                self.db_handler.add_data_in_table("white_led_{}".format(board_number), self.white_led_state)
+
             return answer
         except Exception as e:
             self._status = "error\n{}".format(e)
@@ -192,6 +221,12 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
+
+            # проверка на то, что в ответе есть кусок ожидаемой нами строки,
+            # строка ответа одинаковая для всех команд на светодиоды
+            if "cmd: 0x80" in str(answer):
+                self.db_handler.add_data_in_table("red_led_{}".format(board_number), self.red_led_state)
+
             return answer
         except Exception as e:
             self._status = "error\n{}".format(e)
@@ -204,6 +239,10 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
+
+            if "cmd: 0x40" in str(answer):
+                self.db_handler.add_data_in_table("fan_{}".format(board_number), state)
+
             return answer
         except Exception as e:
             self._status = "error\n{}".format(e)
