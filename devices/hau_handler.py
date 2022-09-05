@@ -205,7 +205,7 @@ class HAUHandler(BaseDevice):
             # проверка на то, что в ответе есть кусок ожидаемой нами строки,
             # строка ответа одинаковая для всех команд на светодиоды
             if "cmd: 0x80" in str(answer):
-                self.db_handler.add_data_in_table("white_led_{}".format(board_number), self.white_led_state)
+                self.db_handler.add_data_in_table("white_led_{}".format(board_number), int(self.white_led_state, 16))
 
             return answer
         except Exception as e:
@@ -219,14 +219,13 @@ class HAUHandler(BaseDevice):
             self.red_led_state = red_led_state
             command = "o{0}80{1}{2}\n".format(board_number, self.red_led_state, self.white_led_state)
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
-            print(answer)
 
             self._status = "works\n{}".format(answer)
 
             # проверка на то, что в ответе есть кусок ожидаемой нами строки,
             # строка ответа одинаковая для всех команд на светодиоды
             if "cmd: 0x80" in str(answer):
-                self.db_handler.add_data_in_table("red_led_{}".format(board_number), self.red_led_state)
+                self.db_handler.add_data_in_table("red_led_{}".format(board_number), int(self.red_led_state, 16))
 
             return answer
         except Exception as e:
@@ -242,7 +241,7 @@ class HAUHandler(BaseDevice):
             self._status = "works\n{}".format(answer)
 
             if "cmd: 0x40" in str(answer):
-                self.db_handler.add_data_in_table("fan_{}".format(board_number), state)
+                self.db_handler.add_data_in_table("fan_{}".format(board_number), int(state, 16))
 
             return answer
         except Exception as e:
