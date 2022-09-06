@@ -271,7 +271,7 @@ class HAUHandler(BaseDevice):
             print("ANSWER: ", answer)
             self._status = "works\n{}".format(answer)
 
-            parsed_answer = HAUAnswersParser.pressure_answer_parser(Message.parse_zmq_msg(answer))
+            parsed_answer = HAUAnswersParser.pressure_answer_parser(answer)
             print("PARSED_ANSWER: ", parsed_answer)
             if parsed_answer:
                 self.db_handler.add_data_in_table("pressure{}".format(sensor_number), parsed_answer)
