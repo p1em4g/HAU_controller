@@ -123,7 +123,7 @@ class HAUHandler(BaseDevice):
         self.db_handler = MySQLdbHandler(config.db_params)
 
         # this creates (7 - 1) pump tables in loop
-        for num in range(1, 7):
+        for num in range(1, 8):
             self.db_handler.create_data_table(sensor_name="pump{}".format(num))
 
         # this creates (7 - 1) valve tables in loop
