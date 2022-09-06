@@ -22,7 +22,7 @@ class HAUNode(BaseNode):
         self.add_device(self.hau_handler)
 
         self.pressure_sensor_time = 1000
-        self.pump_time = 10 * 1000
+        self.pump_time = 833 * 1000
         self.pump_state = False
         self.timer = 0
 
