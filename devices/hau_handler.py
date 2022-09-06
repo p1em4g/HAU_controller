@@ -268,6 +268,11 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
+
+            parsed_answer = HAUAnswersParser.pressure_answer_parser(answer)
+            if parsed_answer:
+                self.db_handler.add_data_in_table("pressure{}".format(sensor_number), parsed_answer)
+
             return answer
 
         except Exception as e:

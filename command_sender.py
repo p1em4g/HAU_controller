@@ -29,7 +29,7 @@ if __name__ == "__main__":
     addr = "tcp://10.9.0.12:5666"
     device = "hau_handler"
     command = "get_pressure"
-    data = {"sensor_number": "1"}
+    data = {"sensor_number": "2"}
     network = [
         {"address": "tcp://10.9.0.12:5666",
         "address1": "tcp://10.9.0.7:5568", }

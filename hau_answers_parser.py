@@ -1,3 +1,5 @@
+import  re
+
 class HAUAnswersParser:
 
     @classmethod
@@ -18,27 +20,16 @@ class HAUAnswersParser:
         else:
             return None
 
+    @classmethod
+    def pressure_answer_parser(cls, data_str):
+        parsed_data = re.search(' \d\.\d\d', data_str)
+        if parsed_data:
+            return float(parsed_data.group())
+        else:
+            return None
+
 
 if __name__ == "__main__":
-    res = HAUAnswersParser.pump_answer_parser("(b'Pump #6 - OFF\r\n',)")
-    print(res)
-
-    res = HAUAnswersParser.valve_answer_parser("# 'data': (b'Valve #5 - CLOSE\\r\\n',))")
-    print(res)
-# 'data': "(b'Pump #6 - OFF\\r\\n',)",
-#   'data': "(b'Pump #6 - ON\\r\\n',)",
-#   'data': "(b'Valve #5 - OPEN\\r\\n',)",
-# 'data': "(b'Valve #5 - CLOSE\\r\\n',)",
-# b'Valve #5 - CLOSE
-# 'data': "(b'usart cmd (  addr: 0x8E, cmd: 0x80 )\\r\\n',)",
-
-# red
-# b'usart cmd (  addr: 0x8C, cmd: 0x80 )\\r\\n',
-# b'usart cmd (  addr: 0x8C, cmd: 0x80 )\\r\\n',
-# b'usart cmd (  addr: 0x8E, cmd: 0x80 )\\r\\n',
-# white
-# b'usart cmd (  addr: 0x8C, cmd: 0x80 )\\r\\n',
-
-
-# b'usart cmd (  addr: 0x8E, cmd: 0x20 )\\r\\n    posv_temp: 23.84 ( "
-#           "dat1: 0xAA, dat2: 0xAA, dat3: 0x64, dat'
+    data = "'data': (b'Sensor #1 (ADC code: 549; ADC val: 2.61)\\r\\n',)"
+    data2 = 'dfsdfsf'
+    print(HAUAnswersParser.pressure_answer_parser(data2))
