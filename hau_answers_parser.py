@@ -31,5 +31,6 @@ class HAUAnswersParser:
 
 if __name__ == "__main__":
     data = "'data': (b'Sensor #1 (ADC code: 549; ADC val: 2.61)\\r\\n',)"
-    data2 = 'dfsdfsf'
-    print(HAUAnswersParser.pressure_answer_parser(data2))
+    data2 = "b'Conductometr (ADC code: 1; ADC val: 0.00) \\r\\n',)"
+    data3 = 'dfsdfsf'
+    print(HAUAnswersParser.pressure_and_conductivity_answer_parser(data2))

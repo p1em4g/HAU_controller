@@ -285,11 +285,12 @@ class HAUHandler(BaseDevice):
         try:
             command = "r\n"
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
-
+            print("ANSWER: ", str(answer))
             self._status = "works\n{}".format(answer)
 
             parsed_answer = HAUAnswersParser.pressure_and_conductivity_answer_parser(str(answer))
             if parsed_answer:
+                print("***********************")
                 self.db_handler.add_data_in_table("conductivity", parsed_answer)
 
             return answer
