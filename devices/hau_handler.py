@@ -270,7 +270,7 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
             self._status = "works\n{}".format(answer)
 
-            parsed_answer = HAUAnswersParser.pressure_answer_parser(str(answer))
+            parsed_answer = HAUAnswersParser.pressure_and_conductivity_answer_parser(str(answer))
             if parsed_answer:
                 self.db_handler.add_data_in_table("pressure{}".format(sensor_number), parsed_answer)
 
@@ -287,6 +287,11 @@ class HAUHandler(BaseDevice):
             answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
 
             self._status = "works\n{}".format(answer)
+
+            parsed_answer = HAUAnswersParser.pressure_and_conductivity_answer_parser(str(answer))
+            if parsed_answer:
+                self.db_handler.add_data_in_table("conductivity", parsed_answer)
+
             return answer
 
         except Exception as e:

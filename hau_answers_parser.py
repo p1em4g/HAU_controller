@@ -21,7 +21,7 @@ class HAUAnswersParser:
             return None
 
     @classmethod
-    def pressure_answer_parser(cls, data_str):
+    def pressure_and_conductivity_answer_parser(cls, data_str):
         parsed_data = re.search(' \d\.\d\d', data_str)
         if parsed_data:
             return float(parsed_data.group())
