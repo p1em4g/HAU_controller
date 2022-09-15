@@ -5,7 +5,7 @@ from devices.hau_handler import HAUHandler
 from database_handler import MySQLdbHandler
 
 import config
-import time
+from datetime import datetime, date, time, timedelta
 
 class HAUNode(BaseNode):
     def __init__(self, endpoint: str, list_of_nodes: list, is_daemon: bool = True):
@@ -21,34 +21,40 @@ class HAUNode(BaseNode):
         )
         self.add_device(self.hau_handler)
 
-        self.pressure_sensor_time = 1000
-        self.pump_time = 667
-        self.pump_state = False
-        self.start_time = time.time()
+        self.bubble_expulsion_time1 = time(hour=5, minute=0, second=0)
+        self.bubble_expulsion_time2 = time(hour=17, minute=0, second=0)
+        self.expel_bubbles_flag = False
+        self.first_pumping_completed = False
+        self.second_pumping_completed = False
+        self.expulsion_of_bubbles_pumping_time = timedelta(seconds=3)
+        self.start_time = datetime.now()
 
 
     def custom_preparation(self):
-        self.pressure_sensor_timer = PeriodicCallback(self.get_pressure, self.pressure_sensor_time)
-        self.pump_timer = PeriodicCallback(self.pump_control, 500)
+        self.expulsion_of_bubbles_timer = PeriodicCallback(self.expel_bubbles(), 1000)
 
-        self.pressure_sensor_timer.start()
-        self.pump_timer.start()
+        self.expulsion_of_bubbles_timer.start()
 
-    def get_pressure(self):
-        for i in range(10):
-            self.hau_handler.pressure_getter(1)
-
-    def pump_control(self):
-        print(time.time() - self.start_time)
-        if self.pump_state == False:
+    def expel_bubbles(self):
+        if (((datetime.now().time() > self.bubble_expulsion_time1) and (self.first_pumping_completed == False)) \
+            or ((datetime.now().time() > self.bubble_expulsion_time2) and (self.second_pumping_completed == False))) \
+                and (self.expel_bubbles_flag == False):
+            self.hau_handler.valve_controller(5, 0)
+            self.hau_handler.valve_controller(6, 0) # закрываем клапаны
+            self.hau_handler.pump_controller(6, 1)
             self.hau_handler.pump_controller(7, 1)
-            self.pump_state = True
-
-        elif self.pump_state == True and time.time() - self.start_time > self.pump_time:
+            self.expel_bubbles_flag = True
+        elif (self.expel_bubbles_flag == True) and (datetime.now() - datetime.combine(date.today(), self.bubble_expulsion_time1)) > self.expulsion_of_bubbles_pumping_time:
+            self.expel_bubbles_flag = False
+            self.hau_handler.pump_controller(6, 0)
             self.hau_handler.pump_controller(7, 0)
-            self.pump_state = False
-            self.pressure_sensor_timer.stop()
-            self.pump_timer.stop()
+            self.hau_handler.valve_controller(5, 1) # открываем клапаны
+            self.hau_handler.valve_controller(6, 1)
+
+            if self.first_pumping_completed == False:
+                self.first_pumping_completed = True
+            else:
+                self.second_pumping_completed = True
 
 
 if __name__ == "__main__":
