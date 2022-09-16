@@ -13,12 +13,9 @@ class HAUAnswersParser:
 
     @classmethod
     def valve_answer_parser(cls, data_str):
-        # print("Отладочный вывод парсера: data_str: ", data_str)
-        # print("Отладочный вывод парсера: re.match('OPEN', data_str): ", re.match(".*OPEN.*", data_str))
-        if re.match(".*OPEN.*", data_str):
-            # print("Отладочный вывод парсера: return 1")
+        if "OPEN" in data_str:
             return 1
-        elif re.match(".*CLOSE.*", data_str):
+        elif "CLOSE" in data_str:
             return 0
         else:
             return None

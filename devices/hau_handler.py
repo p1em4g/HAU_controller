@@ -182,7 +182,7 @@ class HAUHandler(BaseDevice):
     def valve_controller(self, valve_number, state,):
         try:
             command = "v{0}{1}\n".format(valve_number, state)
-            answer = HAUHandler.send_command(com=command, serial_dev=self.ser)
+            answer = str(HAUHandler.send_command(com=command, serial_dev=self.ser))
 
             self._status = "works\n{}".format(answer)
 
