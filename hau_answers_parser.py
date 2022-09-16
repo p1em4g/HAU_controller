@@ -13,10 +13,13 @@ class HAUAnswersParser:
 
     @classmethod
     def valve_answer_parser(cls, data_str):
-        if "CLOSE" in data_str:
-            return 0
-        elif "OPEN" in data_str:
+        # print("Отладочный вывод парсера: data_str: ", data_str)
+        # print("Отладочный вывод парсера: re.match('OPEN', data_str): ", re.match(".*OPEN.*", data_str))
+        if re.match(".*OPEN.*", data_str):
+            # print("Отладочный вывод парсера: return 1")
             return 1
+        elif re.match(".*CLOSE.*", data_str):
+            return 0
         else:
             return None
 
@@ -32,5 +35,9 @@ class HAUAnswersParser:
 if __name__ == "__main__":
     data = "'data': (b'Sensor #1 (ADC code: 549; ADC val: 2.61)\\r\\n',)"
     data2 = "b'Conductometr (ADC code: 1; ADC val: 0.00) \\r\\n',)"
-    data3 = 'dfsdfsf'
-    print(HAUAnswersParser.pressure_and_conductivity_answer_parser(data2))
+    data4 = "b'Valve #6 - CLOSE\r\n'"
+    data5 = "(b'Valve #6 - OPEN\r\n',)"
+    data6 = " OPEN"
+    print(HAUAnswersParser.valve_answer_parser(data4))
+    a = re.match("OPEN", "(b'Valve #6 - OPEN\r\n',)")
+    print(a)
