@@ -28,14 +28,14 @@ class HAUNode(BaseNode):
         self.expel_bubbles_flag = False
         self.first_pumping_completed = False
         self.second_pumping_completed = False
-        self.expulsion_of_bubbles_pumping_time = timedelta(seconds=3)
+        self.expulsion_of_bubbles_pumping_time = timedelta(seconds=5)
         self.start_time = datetime.now()
 
         # переменные для цикла увлажнения КМ
         self.active_tank_number = 1  # РВ A1 - это 1, РВ А5 - это 2
 
     def custom_preparation(self):
-        self.expulsion_of_bubbles_timer = PeriodicCallback(self.expel_bubbles(), 1000)
+        self.expulsion_of_bubbles_timer = PeriodicCallback(self.expel_bubbles, 1000)
 
         self.expulsion_of_bubbles_timer.start()
 

@@ -186,7 +186,7 @@ class HAUHandler(BaseDevice):
 
             self._status = "works\n{}".format(answer)
 
-            self.db_handler.add_data_in_table("pump{}".format(valve_number),
+            self.db_handler.add_data_in_table("valve{}".format(valve_number),
                                               int(HAUAnswersParser.valve_answer_parser(answer)))
 
             return answer
