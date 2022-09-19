@@ -62,25 +62,25 @@ class HAUNode(BaseNode):
         if (((datetime.now().time() > self.bubble_expulsion_time1) and (self.first_pumping_completed == False)) \
             or ((datetime.now().time() > self.bubble_expulsion_time2) and (self.second_pumping_completed == False))) \
                 and (self.expel_bubbles_flag == False):
-            self.hau_handler.valve_controller(5, 0)
+            self.hau_handler.control_valve(5, 0)
             print("INFO: ", datetime.now(), " клапан 5 закрыт")
-            self.hau_handler.valve_controller(6, 0) # закрываем клапаны
+            self.hau_handler.control_valve(6, 0) # закрываем клапаны
             print("INFO: ", datetime.now(), " клапан 6 закрыт")
-            self.hau_handler.pump_controller(6, 1)
+            self.hau_handler.control_pump(6, 1)
             print("INFO: ", datetime.now(), " насос 6 включен")
-            self.hau_handler.pump_controller(7, 1)
+            self.hau_handler.control_pump(7, 1)
             print("INFO: ", datetime.now(), " насос 7 включен")
             self.expel_bubbles_flag = True
         elif (self.expel_bubbles_flag == True) \
                 and (datetime.now() - datetime.combine(date.today(), self.bubble_expulsion_time1)) > self.expulsion_of_bubbles_pumping_time:
             self.expel_bubbles_flag = False
-            self.hau_handler.pump_controller(6, 0)
+            self.hau_handler.control_pump(6, 0)
             print("INFO: ", datetime.now(), " насос 6 выключен")
-            self.hau_handler.pump_controller(7, 0)
+            self.hau_handler.control_pump(7, 0)
             print("INFO: ", datetime.now(), " насос 7 выключен")
-            self.hau_handler.valve_controller(5, 1) # открываем клапаны
+            self.hau_handler.control_valve(5, 1) # открываем клапаны
             print("INFO: ", datetime.now(), " клапан 5 открыт")
-            self.hau_handler.valve_controller(6, 1)
+            self.hau_handler.control_valve(6, 1)
             print("INFO: ", datetime.now(), " клапан 6 открыт")
 
             if self.first_pumping_completed == False:
@@ -102,23 +102,23 @@ class HAUNode(BaseNode):
     # если давление падает ниже некоторой границы, начинаем пркоачку из активного РВ
     # помогите
     # def humidify_root_module(self):
-    #     pressure = self.hau_handler.pressure_getter(3)
+    #     pressure = self.hau_handler.get_pressure(3)
     #     if (not self.humidify_active) and pressure < self.min_critical_pressure and (not self.humidify_sleeping):
     #         self.humidify_active = True
-    #         self.hau_handler.valve_controller(6, 1)
+    #         self.hau_handler.control_valve(6, 1)
     #         print("INFO: ", datetime.now(), " клапан 6 открыт")
     #
     #         self.pumping_pause_start_time = datetime.now() - self.pumpin_pause_time  # костыль
     #
     #     elif self.humidify_active and self.pump_active_time_counter < self.humidify_active_time:
     #         if not self.pumping_active and (datetime.now() - self.pumping_pause_start_time) >= self.pumpin_pause_time:
-    #             self.hau_handler.pump_controller(self.active_tank_number, 1)
+    #             self.hau_handler.control_pump(self.active_tank_number, 1)
     #             print("INFO: ", datetime.now(), " насос {} включен".format(self.active_tank_number))
     #
     #             self.pumping_active = True
     #             self.pumping_start_time = datetime.now()
     #         elif self.pumping_active and (datetime.now() - self.pumping_start_time) >= self.pumpin_time:
-    #             self.hau_handler.pump_controller(self.active_tank_number, 0)
+    #             self.hau_handler.control_pump(self.active_tank_number, 0)
     #             print("INFO: ", datetime.now(), " насос {} выключен".format(self.active_tank_number))
     #
     #             self.humidify_active = False
