@@ -8,8 +8,6 @@ import config
 
 
 class HAUNode(BaseNode):
-    """
-    """
     def __init__(self, endpoint: str, list_of_nodes: list, is_daemon: bool = True):
         super().__init__(endpoint, list_of_nodes, is_daemon)
         self._annotation = "humidification and aeration unit"
