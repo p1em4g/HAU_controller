@@ -31,7 +31,7 @@ class HAUNode(BaseNode):
 
 
     def custom_preparation(self):
-        self.expulsion_of_bubbles_timer = PeriodicCallback(self.pump, 1000)
+        self.expulsion_of_bubbles_timer = PeriodicCallback(self.pump, 500)
 
         self.expulsion_of_bubbles_timer.start()
 
@@ -55,6 +55,7 @@ class HAUNode(BaseNode):
 
             self.hau_handler.control_pump(4, 1)
             print("INFO: ", datetime.now(), " насос 4 включен")
+            self.mixing_start_time = datetime.now()
             self.mixing = True
 
             conductivity = self.hau_handler.get_conductivity()
