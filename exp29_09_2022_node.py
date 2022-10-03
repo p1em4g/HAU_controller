@@ -41,7 +41,10 @@ class HAUNode(BaseNode):
             print("INFO: ", datetime.now(), " насос 4 вылючен")
             self.mixing = False
 
+            conductivity = self.hau_handler.get_conductivity()
+            print("INFO: ", datetime.now(), "Данные с кондуктометра ПОСЛЕ перемешивания: ", conductivity)
             self.hau_handler.control_pump(5, 1)
+
             print("INFO: ", datetime.now(), " насос 5 включен")
             self.pumping_start_time = datetime.now()
             self.pumping = True
@@ -57,9 +60,6 @@ class HAUNode(BaseNode):
             print("INFO: ", datetime.now(), " насос 4 включен")
             self.mixing_start_time = datetime.now()
             self.mixing = True
-
-            conductivity = self.hau_handler.get_conductivity()
-            print("INFO: ", datetime.now(), "Данные с кондуктометра ПОСЛЕ перемешивания: ", conductivity)
 
 
 
