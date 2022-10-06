@@ -274,7 +274,7 @@ class HAUHandler(BaseDevice):
             if parsed_answer:
                 self.db_handler.add_data_in_table("pressure{}".format(sensor_number), parsed_answer)
 
-            return answer
+            return parsed_answer
 
         except Exception as e:
             self._status = "error\n{}".format(e)

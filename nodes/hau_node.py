@@ -58,10 +58,11 @@ class HAUNode(BaseNode):
         self.humidify_sleeping_start_time = None
 
     def custom_preparation(self):
-        self.expulsion_of_bubbles_timer = PeriodicCallback(self.expel_bubbles, 60000)
-        # self.expulsion_of_bubbles_timer = PeriodicCallback(self.humidify_root_module, 1000)
+        self.expulsion_of_bubbles_timer = PeriodicCallback(self.expel_bubbles, 1000)
+        self.root_module_humidify_timer = PeriodicCallback(self.humidify_root_module, 1000)
 
         self.expulsion_of_bubbles_timer.start()
+        self.root_module_humidify_timer.start()
 
     def expel_bubbles(self):
         if (((datetime.now().time() > self.bubble_expulsion_time1) and (self.first_pumping_completed == False)) \
@@ -107,7 +108,7 @@ class HAUNode(BaseNode):
     # если давление падает ниже некоторой границы, начинаем пркоачку из активного РВ
     # помогите
     def humidify_root_module(self):
-        pressure = self.hau_handler.get_pressure(3)
+        pressure = float(self.hau_handler.get_pressure(3))
         # если цикл пркоачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
         if (not self.humidify_active) and pressure < self.min_critical_pressure_in_root_module and (not self.humidify_sleeping):
             self.humidify_active = True
