@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 import dash
 from dash import html
 

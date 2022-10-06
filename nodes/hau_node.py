@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 from plexus.nodes.node import BaseNode, PeriodicCallback
 
 from devices.hau_handler import HAUHandler
