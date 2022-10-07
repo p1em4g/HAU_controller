@@ -64,10 +64,24 @@ class HAUNode(BaseNode):
         self.expulsion_of_bubbles_timer.start()
         self.root_module_humidify_timer.start()
 
+    def control(self):
+        # если сейчас активных циклов нет, то выполнить циклы увлажнения КМ
+        if not self.humidify_active:
+            self.find_empty_tank()
+        if not self.expel_bubbles_flag and not self.humidify_active:
+            self.humidify_root_module(6, self.active_tank_number, 6) # клапан 6, датчик 6 - параметры для первого КМ
+            self.humidify_root_module(4, self.active_tank_number, 5) # клапан 5, датчик 4 - параметры для второго КМ
+        if not self.expel_bubbles_flag and not self.humidify_active:
+            self.expel_bubbles()
+
+    def find_empty_tank(self):
+        print("INFO: ", datetime.now(), "Ищем пустой РВ")
     def expel_bubbles(self):
         if (((datetime.now().time() > self.bubble_expulsion_time1) and (self.first_pumping_completed == False)) \
             or ((datetime.now().time() > self.bubble_expulsion_time2) and (self.second_pumping_completed == False))) \
                 and (self.expel_bubbles_flag == False):
+            print("INFO: ", datetime.now(), "начинаем прокачку КМ от пузырей")
+
             self.hau_handler.control_valve(5, 0)
             print("INFO: ", datetime.now(), " клапан 5 закрыт")
             self.hau_handler.control_valve(6, 0) # закрываем клапаны
@@ -107,24 +121,25 @@ class HAUNode(BaseNode):
     # цикл увлажнения
     # если давление падает ниже некоторой границы, начинаем пркоачку из активного РВ
     # помогите
-    def humidify_root_module(self):
-        pressure = float(self.hau_handler.get_pressure(3))
+    def humidify_root_module(self, pressure_sensor_num, tank_num, valve_num):
+        pressure = float(self.hau_handler.get_pressure(pressure_sensor_num))
         # если цикл пркоачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
         if (not self.humidify_active) and pressure < self.min_critical_pressure_in_root_module and (not self.humidify_sleeping):
             print("INFO: ", datetime.now(), "Начат цикл увлажнения КМ")
             self.humidify_active = True
-            self.hau_handler.control_valve(6, 1)
-            print("INFO: ", datetime.now(), " клапан 6 открыт")
+            self.hau_handler.control_valve(valve_num, 1)
+            print("INFO: ", datetime.now(), " клапан {} открыт".format(valve_num))
 
             self.pumping_pause_start_time = datetime.now() - self.pumpin_pause_time  # костыль
+
         # если цикл пркоачки начат и насос в сумме проработал меньше чем надо то ...
         elif self.humidify_active and self.pump_active_time_counter < self.humidify_active_time:
             # если насос выключен и время паузы между дозами прошло, то включаем насос и записываем время его включения
             if not self.pumping_active and (datetime.now() - self.pumping_pause_start_time) >= self.pumpin_pause_time:
                 print("INFO: ", datetime.now(), "Начата подача дозы")
 
-                self.hau_handler.control_pump(self.active_tank_number, 1)
-                print("INFO: ", datetime.now(), " насос {} включен".format(self.active_tank_number))
+                self.hau_handler.control_pump(tank_num, 1)
+                print("INFO: ", datetime.now(), " насос {} включен".format(tank_num))
 
                 self.pumping_active = True
                 self.pumping_start_time = datetime.now()
@@ -132,8 +147,8 @@ class HAUNode(BaseNode):
             elif self.pumping_active and (datetime.now() - self.pumping_start_time) >= self.pumpin_time:
                 self.pump_active_time_counter += (datetime.now() - self.pumping_start_time) # добавляем время работы насоса в счетскик
 
-                self.hau_handler.control_pump(self.active_tank_number, 0)
-                print("INFO: ", datetime.now(), " насос {} выключен".format(self.active_tank_number))
+                self.hau_handler.control_pump(tank_num, 0)
+                print("INFO: ", datetime.now(), " насос {} выключен".format(tank_num))
 
                 self.pumping_active = False
                 self.pumping_pause_start_time = datetime.now()
@@ -141,10 +156,14 @@ class HAUNode(BaseNode):
                 print("INFO: ", datetime.now(), "сумарное время работы насоса за текущий цикл увлажнения: ", self.pump_active_time_counter)
         # если цикл прокачки активен и насос в сумме наработал больше, чем должен, то завершаем прокачку и начинаем спать
         elif self.humidify_active and self.pump_active_time_counter >= self.humidify_active_time:
+            self.hau_handler.control_valve(valve_num, 0)
+            print("INFO: ", datetime.now(), " клапан {} закрыт".format(valve_num))
+
             print("INFO: ", datetime.now(), "Увлажнение закончено, начат сон ", self.humidify_active_time, " секунд")
             self.humidify_active = False
             self.humidify_sleeping = True
             self.humidify_sleeping_start_time = datetime.now()
+            self.pump_active_time_counter = timedelta(seconds=0)
 
         # если мы спим и спим дольше положенного времени, то отключаем режим сна
         # время сна равно времени сумарной работы насоса?
