@@ -142,8 +142,8 @@ class MySQLdbHandler:
         try:
             cur.execute(comm_str)
         except Exception as e:
-            # print("Error while saving logs from :")
-            # print(e)
+            print("Error while saving logs from :")
+            print(e)
 
         cur.execute('commit')
         con.close()
