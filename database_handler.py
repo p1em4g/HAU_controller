@@ -20,7 +20,7 @@ class MySQLdbHandler:
         #pass
 
     def create_database(self):
-        print("create database")
+        # print("create database")
 
         con = pymysql.connect(host=self._db_params["host"],
                               user=self._db_params["user"],
@@ -64,7 +64,7 @@ class MySQLdbHandler:
                     )
 
         cur.execute('describe {}'.format(sensor_name))
-        print(cur.fetchall())
+        # print(cur.fetchall())
         con.close()
 
 
@@ -98,7 +98,7 @@ class MySQLdbHandler:
                     )
 
         cur.execute('describe {}'.format(log_name))
-        print(cur.fetchall())
+        # print(cur.fetchall())
         con.close()
 
     def add_data_in_table(self, table_name, data):
@@ -116,7 +116,7 @@ class MySQLdbHandler:
         comm_str = 'insert into {} (time, data) values( "{}", "{}" )'.format(
             table_name, time_, data)
 
-        print("comm_str: {}".format(comm_str))
+        # print("comm_str: {}".format(comm_str))
 
         cur.execute(comm_str)
 
@@ -142,8 +142,8 @@ class MySQLdbHandler:
         try:
             cur.execute(comm_str)
         except Exception as e:
-            print("Error while saving logs from :")
-            print(e)
+            # print("Error while saving logs from :")
+            # print(e)
 
         cur.execute('commit')
         con.close()
