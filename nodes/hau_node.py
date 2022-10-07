@@ -58,11 +58,9 @@ class HAUNode(BaseNode):
         self.humidify_sleeping_start_time = None
 
     def custom_preparation(self):
-        self.expulsion_of_bubbles_timer = PeriodicCallback(self.expel_bubbles, 1000)
-        self.root_module_humidify_timer = PeriodicCallback(self.humidify_root_module, 1000)
+        self.control_timer = PeriodicCallback(self.control, 1000)
 
-        self.expulsion_of_bubbles_timer.start()
-        self.root_module_humidify_timer.start()
+        self.control_timer.start()
 
     def control(self):
         # если сейчас активных циклов нет, то выполнить циклы увлажнения КМ
