@@ -130,6 +130,8 @@ class HAUNode(BaseNode):
                 self.pumping_start_time = datetime.now()
             # если насос включен и время работы насоса больше, чем должно быть, выключаем насос
             elif self.pumping_active and (datetime.now() - self.pumping_start_time) >= self.pumpin_time:
+                self.pump_active_time_counter += (datetime.now() - self.pumping_start_time) # добавляем время работы насоса в счетскик
+
                 self.hau_handler.control_pump(self.active_tank_number, 0)
                 print("INFO: ", datetime.now(), " насос {} выключен".format(self.active_tank_number))
 
