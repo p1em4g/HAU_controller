@@ -291,7 +291,7 @@ class HAUHandler(BaseDevice):
             if parsed_answer != None:
                 self.db_handler.add_data_in_table("conductivity", parsed_answer)
 
-            return answer
+            return float(parsed_answer)
 
         except Exception as e:
             self._status = "error\n{}".format(e)
