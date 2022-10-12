@@ -266,10 +266,23 @@ class HAUNode(BaseNode):
             print("INFO: ", datetime.now(), "сон окончен")
             self.humidify_sleeping = False
 
+    def turn_off_all_pumps(self):
+        self.hau_handler.control_pump(1,0)
+        self.hau_handler.control_pump(2, 0)
+        self.hau_handler.control_pump(3, 0)
+        self.hau_handler.control_pump(4, 0)
+        self.hau_handler.control_pump(5, 0)
+        self.hau_handler.control_pump(6, 0)
+        self.hau_handler.control_pump(7, 0)
+        print("INFO: ", datetime.now(), "Произошло отключение всех насосов")
 
 if __name__ == "__main__":
     network = config.network
 
     n1 = HAUNode(network[0]['address'], list_of_nodes=network)
-    n1.start()
-    n1.join()
+
+    try:
+        n1.start()
+        n1.join()
+    finally:
+        n1.turn_off_all_pumps()
