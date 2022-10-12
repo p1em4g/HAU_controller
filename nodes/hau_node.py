@@ -33,11 +33,13 @@ class HAUNode(BaseNode):
         self.expulsion_of_bubbles_pumping_time = timedelta(seconds=5)
         self.start_time = datetime.now()
 
-        # переменные для цикла увлажнения КМ
+        # переменные для РВ
         self.active_tank_number = 1  # РВ A1 - это 1, РВ А5 - это 2
         self.min_critical_pressure_in_tank = None #!!!НАДО ВВЕСТИ АДЕКВАТНОЕ ЗНАЧЕНИЕ!!!
         self.first_tank_water_amount = 1 #!!!НАДО ВВЕСТИ АДЕКВАТНОЕ ЗНАЧЕНИЕ!!!
         self.second_tank_water_amount = 1 #!!!НАДО ВВЕСТИ АДЕКВАТНОЕ ЗНАЧЕНИЕ!!!
+
+        # переменные для цикла увлажнения КМ
         self.min_critical_pressure_in_root_module = 3.0 # !!!НАДО ВВЕСТИ АДЕКВАТНОЕ ЗНАЧЕНИЕ!!!
 
         self.humidify_active_1 = False  # показывает, активен ли сейчас цикл прокачки
@@ -57,6 +59,9 @@ class HAUNode(BaseNode):
         # после прокачки некоторое время игнорируем показания ДД и просто спим
         self.humidify_sleeping = False
         self.humidify_sleeping_start_time = None
+
+        #переменные для цикла перемешивания и наполнения РВ
+        self.filling_active = False
 
     def custom_preparation(self):
         self.control_timer = PeriodicCallback(self.control, 1000)
@@ -87,6 +92,17 @@ class HAUNode(BaseNode):
 
     def find_empty_tank(self):
         print("INFO: ", datetime.now(), "Ищем пустой РВ")
+        tank_pressure_1 = self.hau_handler.get_pressure(2) # датчики в РВ перепутаны. В рв 1, датчик 2 и наоборот
+        tank_pressure_2 = self.hau_handler.get_pressure(1) # датчики в РВ перепутаны. В рв 1, датчик 2 и наоборот
+        if tank_pressure_1 <= self.min_critical_pressure_in_tank and not self.filling_active:
+            print("INFO: ", datetime.now(), "Давление в РВ1 ниже критического. Давление: {}".format(tank_pressure_1))
+            self.active_tank_number = 2
+            print("INFO: ", datetime.now(), "Активный резервуар - РВ2")
+        if tank_pressure_2 <= self.min_critical_pressure_in_tank and not self.filling_active:
+            print("INFO: ", datetime.now(), "Давление в РВ2 ниже критического. Давление: {}".format(tank_pressure_2))
+            self.active_tank_number = 1
+            print("INFO: ", datetime.now(), "Активный резервуар - РВ1")
+
     def expel_bubbles(self):
         if (((datetime.now().time() > self.bubble_expulsion_time1) and (self.first_pumping_completed == False)) \
             or ((datetime.now().time() > self.bubble_expulsion_time2) and (self.second_pumping_completed == False))) \
@@ -129,12 +145,17 @@ class HAUNode(BaseNode):
             self.second_pumping_completed = False
             print("INFO: ", datetime.now(), " Флаги для прокачек КМ сброшены")
 
+
+    # цикл перемешивания и наполнения РВ
+    def fill_tank(self):
+        pass
+
     # цикл увлажнения
     # если давление падает ниже некоторой границы, начинаем пркоачку из активного РВ
     # помогите
     def humidify_root_module_1(self):
         tank_num = self.active_tank_number
-        pressure_sensor_num = 6
+        pressure_sensor_num = 3
         valve_num = 6
         pressure = float(self.hau_handler.get_pressure(pressure_sensor_num))
         # если цикл пркоачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
