@@ -52,7 +52,7 @@ class HAUNode(BaseNode):
             # it is global variables to use them in other periodical callbacks
 
             # РВ A1 - это 1, РВ А5 - это 2
-            voltage = self.hau_handler.get_pressure(1)
+            voltage = self.hau_handler.get_pressure(2)  # датчики давлений в РВ перепутаны
             tank_1_state = 175.4*voltage - 396.5  # unstable data from calibration experiment
             if tank_1_state <= self.tank_low_volume:
                 print("INFO: ", datetime.datetime.now(), " РВ1 опустошен. Кол-во воды: {}".format(tank_1_state))
@@ -66,7 +66,7 @@ class HAUNode(BaseNode):
                     self.tank_1_empty = False
                     return
 
-            voltage = self.hau_handler.get_pressure(2)
+            voltage = self.hau_handler.get_pressure(1)
             tank_2_state = 175.4 * voltage - 396.5  # unstable data from calibration experiment
             if tank_2_state <= self.tank_low_volume:
                 print("INFO: ", datetime.datetime.now(), " РВ2 опустошен. Кол-во воды: {}".format(tank_2_state))
