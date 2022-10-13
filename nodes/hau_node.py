@@ -162,7 +162,7 @@ class HAUNode(BaseNode):
                 self.hau_handler.control_pump(3, 1)
                 print("INFO: ", datetime.now(), " Насос 3 включен")
                 # wait 1 second
-                time_for_sleep.sleep(1)
+                time_for_sleep.sleep(2)
                 # stop N3
                 self.hau_handler.control_pump(3, 0)
                 print("INFO: ", datetime.now(), " Насос 3 выключен")
@@ -263,10 +263,6 @@ class HAUNode(BaseNode):
             print("INFO: ", datetime.now(), " насос 6 выключен")
             self.hau_handler.control_pump(7, 0)
             print("INFO: ", datetime.now(), " насос 7 выключен")
-            self.hau_handler.control_valve(5, 1) # открываем клапаны
-            print("INFO: ", datetime.now(), " клапан 5 открыт")
-            self.hau_handler.control_valve(6, 1)
-            print("INFO: ", datetime.now(), " клапан 6 открыт")
 
             if self.first_pumping_completed == False:
                 self.first_pumping_completed = True
