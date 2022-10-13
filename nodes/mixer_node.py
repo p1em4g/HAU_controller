@@ -23,7 +23,7 @@ class HAUNode(BaseNode):
 
         self.tank_low_volume = 80  # ml
         self.tank_high_volume = 150  # ml
-        self.low_conductivity = 1.5  #  mSm/cm
+        self.low_conductivity = 1.2  #  mSm/cm временно понизим нижний порог
         self.high_conductivity = 2.5  # mSm/cm
         self.filling_time = datetime.timedelta(seconds=148)
         self.mixing_time = datetime.timedelta(seconds=461)
@@ -38,6 +38,15 @@ class HAUNode(BaseNode):
             name="hau_handler",
         )
         self.add_device(self.hau_handler)
+
+        # зададим начальное положение клапанов
+        self.hau_handler.control_valve(1, 0)
+        self.hau_handler.control_valve(2, 0)
+        self.hau_handler.control_valve(3, 1)
+        self.hau_handler.control_valve(4, 0)
+        self.hau_handler.control_valve(5, 0)
+        self.hau_handler.control_valve(6, 0)
+        print("INFO: ", datetime.datetime.now(), " Заданы начальные состояния клапанов. Клапан 3 открыт, 1,2,4-6 закрыты.")
 
     def custom_preparation(self):
         self.mixer_routine = PeriodicCallback(self.mixer, 3000)

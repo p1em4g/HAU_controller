@@ -8,7 +8,8 @@ from devices.hau_handler import HAUHandler
 from database_handler import MySQLdbHandler
 
 import config
-from datetime import datetime, date, time, timedelta
+import  time as time_for_sleep
+from datetime import datetime, date, timedelta, time
 
 class HAUNode(BaseNode):
     def __init__(self, endpoint: str, list_of_nodes: list, is_daemon: bool = True):
@@ -24,6 +25,16 @@ class HAUNode(BaseNode):
         )
         self.add_device(self.hau_handler)
 
+        # зададим начальное положение клапанов
+        self.hau_handler.control_valve(1, 0)
+        self.hau_handler.control_valve(2, 0)
+        self.hau_handler.control_valve(3, 1)
+        self.hau_handler.control_valve(4, 0)
+        self.hau_handler.control_valve(5, 0)
+        self.hau_handler.control_valve(6, 0)
+        print("INFO: ", datetime.now(),
+              " Заданы начальные состояния клапанов. Клапан 3 открыт, 1,2,4-6 закрыты.")
+
         # переменные для цикла прокачки КМ от пузырей
         self.bubble_expulsion_time1 = time(hour=5, minute=0, second=0) # время прокачки 1
         self.bubble_expulsion_time2 = time(hour=17, minute=0, second=0) # время прокачки 2
@@ -33,11 +44,22 @@ class HAUNode(BaseNode):
         self.expulsion_of_bubbles_pumping_time = timedelta(seconds=5)
         self.start_time = datetime.now()
 
+        # переменные для миксера
+        self.tank_low_volume = 40  # ml
+        self.tank_high_volume = 190  # ml
+        self.low_conductivity = 1.2  # mSm/cm временно понизим нижний порог
+        self.high_conductivity = 2.5  # mSm/cm
+        self.filling_time = timedelta(seconds=148)
+        self.mixing_time = timedelta(seconds=461)
+
+        self.tank_1_empty = False
+        self.tank_2_empty = False
+        self.mixer_status = "waiting"
+        # might be  "waiting", "mixing", "filling", "tank_is_empty"
+        self.mix_timer = datetime.now()  # timer for counting time in mixing periods
+
         # переменные для РВ
         self.active_tank_number = 1  # РВ A1 - это 1, РВ А5 - это 2
-        self.min_critical_pressure_in_tank = None #!!!НАДО ВВЕСТИ АДЕКВАТНОЕ ЗНАЧЕНИЕ!!!
-        self.first_tank_water_amount = 1 #!!!НАДО ВВЕСТИ АДЕКВАТНОЕ ЗНАЧЕНИЕ!!!
-        self.second_tank_water_amount = 1 #!!!НАДО ВВЕСТИ АДЕКВАТНОЕ ЗНАЧЕНИЕ!!!
 
         # переменные для цикла увлажнения КМ
         self.min_critical_pressure_in_root_module = 3.0 # !!!НАДО ВВЕСТИ АДЕКВАТНОЕ ЗНАЧЕНИЕ!!!
@@ -69,6 +91,7 @@ class HAUNode(BaseNode):
         self.control_timer.start()
 
     def control(self):
+        self.mixer()
         # если какой то цикл активен, то продолжаем крутить именно его
         if self.humidify_active_1:
             self.humidify_root_module_1()
@@ -77,32 +100,147 @@ class HAUNode(BaseNode):
         elif self.expel_bubbles_flag:
             self.expel_bubbles()
 
-
-        if not (self.humidify_active_1 or self.humidify_active_2):
-            self.find_empty_tank()
-
         if not (self.expel_bubbles_flag or self.humidify_active_1 or self.humidify_active_2):
             self.humidify_root_module_1()
 
         if not (self.expel_bubbles_flag or self.humidify_active_1 or self.humidify_active_2):
             self.humidify_root_module_2()
 
-        if not self.expel_bubbles_flag and not self.humidify_active_1:
+        if not (self.expel_bubbles_flag or self.humidify_active_1 or self.humidify_active_2):
             self.expel_bubbles()
 
-    def find_empty_tank(self):
-        print("INFO: ", datetime.now(), "Ищем пустой РВ")
-        tank_pressure_1 = self.hau_handler.get_pressure(2) # датчики в РВ перепутаны. В рв 1, датчик 2 и наоборот
-        tank_pressure_2 = self.hau_handler.get_pressure(1) # датчики в РВ перепутаны. В рв 1, датчик 2 и наоборот
-        if tank_pressure_1 <= self.min_critical_pressure_in_tank and not self.filling_active:
-            print("INFO: ", datetime.now(), "Давление в РВ1 ниже критического. Давление: {}".format(tank_pressure_1))
-            self.active_tank_number = 2
-            print("INFO: ", datetime.now(), "Активный резервуар - РВ2")
-        if tank_pressure_2 <= self.min_critical_pressure_in_tank and not self.filling_active:
-            print("INFO: ", datetime.now(), "Давление в РВ2 ниже критического. Давление: {}".format(tank_pressure_2))
-            self.active_tank_number = 1
-            print("INFO: ", datetime.now(), "Активный резервуар - РВ1")
+    def mixer(self):
+        # main function of mixing routine to call periodically
 
+        # check "waiting" flag
+        if self.mixer_status == "waiting":
+            # firstly lets update data from tanks
+            # it is global variables to use them in other periodical callbacks
+
+            # РВ A1 - это 1, РВ А5 - это 2
+            voltage = self.hau_handler.get_pressure(2)  # датчики давлений в РВ перепутаны
+            tank_1_state = 175.4*voltage - 396.5  # unstable data from calibration experiment
+            if tank_1_state <= self.tank_low_volume:
+                print("INFO: ", datetime.now(), " РВ1 опустошен. Кол-во воды: {}".format(tank_1_state))
+                self.tank_1_empty = True
+                self.mixer_status = "tank_is_empty"
+                print("INFO: ", datetime.now(), " Активный РВ: 2")
+                self.active_tank_number = 2
+                print("INFO: ", datetime.now(), " mixer_status: tank_is_empty.")
+                return
+            else:
+                if tank_1_state >= self.tank_high_volume:
+                    print("INFO: ", datetime.now(), " РВ1 заполнен. Кол-во воды: {}".format(tank_1_state))
+                    self.tank_1_empty = False
+                    return
+
+            voltage = self.hau_handler.get_pressure(1)
+            tank_2_state = 175.4 * voltage - 396.5  # unstable data from calibration experiment
+            if tank_2_state <= self.tank_low_volume:
+                print("INFO: ", datetime.now(), " РВ2 опустошен. Кол-во воды: {}".format(tank_2_state))
+                self.tank_2_empty = True
+                self.mixer_status = "tank_is_empty"
+                print("INFO: ", datetime.now(), " Активный РВ: 1")
+                self.active_tank_number = 1
+                print("INFO: ", datetime.now(), " mixer_status: tank_is_empty.")
+                return
+            else:
+                if tank_2_state >= self.tank_high_volume:
+                    print("INFO: ", datetime.now(), " РВ2 заполнен. Кол-во воды: {}".format(tank_1_state))
+                    self.tank_2_empty = False
+                    return
+
+        # check "tank_is_empty" flag
+        if self.mixer_status == "tank_is_empty":
+            # check E in camera
+            e_volts = self.hau_handler.get_conductivity()
+            e = 0.405/(0.0681*e_volts*e_volts - 0.813*e_volts + 2.2)  # unstable data from calibration experiment
+            if e <= self.low_conductivity:
+                print("INFO: ", datetime.now(), " В камере смешения низкая электропроводность: {}".format(e))
+                # it means that we need to add doze of concentrated nutrient solution
+                # firstly run N3 for 1 second - to add small dose of concentrated solution
+                self.hau_handler.control_pump(3, 1)
+                print("INFO: ", datetime.now(), " Насос 3 включен")
+                # wait 1 second
+                time_for_sleep.sleep(1)
+                # stop N3
+                self.hau_handler.control_pump(3, 0)
+                print("INFO: ", datetime.now(), " Насос 3 выключен")
+                # then start mixing
+                print("INFO: ", datetime.now(), " Hачато перемешивание")
+                self.hau_handler.control_pump(4, 1)
+                print("INFO: ", datetime.now(), " Насос 4 вкключен")
+                self.mix_timer = datetime.now()
+                self.mixer_status = "mixing"
+                print("INFO: ", datetime.now(), " mixer_status: mixing")
+                # then wait in background
+                return
+            else:
+                print("INFO: ", datetime.now(), " Электропроводность в камере смешения выше минимума: {}".format(e))
+                # solution is ready
+                # lets fill the tank
+                if self.tank_1_empty:
+                    print("INFO: ", datetime.now(), " Начинаем закачку воды в РВ1")
+                    # open valve 1
+                    self.hau_handler.control_valve(1, 1)
+                    print("INFO: ", datetime.now(), " клапан 1 открыт")
+                    # start N5
+                    self.hau_handler.control_pump(5, 1)
+                    print("INFO: ", datetime.now(), " насос 5 включен")
+                    self.mix_timer = datetime.now()
+                    self.mixer_status = "filling"
+                    return
+
+                if self.tank_2_empty:
+                    print("INFO: ", datetime.now(), " Начинаем закачку воды в РВ2")
+                    # open valve 2
+                    self.hau_handler.control_valve(2, 1)
+                    print("INFO: ", datetime.now(), " клапан 2 открыт")
+                    # start N5
+                    self.hau_handler.control_pump(5, 1)
+                    print("INFO: ", datetime.now(), " насос 5 включен")
+                    self.mix_timer = datetime.now()
+                    self.mixer_status = "filling"
+                    print("INFO: ", datetime.now(), " mixer_status: filling")
+                    return
+
+        # check "filling" flag
+        if self.mixer_status == "filling":
+            # check timer
+            voltage = self.hau_handler.get_pressure(2)  # датчики давлений в РВ перепутаны
+            tank_1_state = 175.4 * voltage - 396.5  # unstable data from calibration experiment
+            voltage = self.hau_handler.get_pressure(1)  # датчики давлений в РВ перепутаны
+            tank_2_state = 175.4 * voltage - 396.5  # unstable data from calibration experiment
+            if (datetime.now() - self.mix_timer >= self.filling_time) or (tank_1_state > self.tank_high_volume) \
+                    or (tank_2_state > self.tank_high_volume):
+                print("INFO: ", datetime.now(), " Закачка в РВ окончена")
+                # then time is come
+                # stop filling
+                self.hau_handler.control_pump(5, 0)
+                print("INFO: ", datetime.now(), " насос 5 выключен")
+                # close correct valve
+                if self.tank_1_empty:
+                    self.hau_handler.control_valve(1, 0)
+                    print("INFO: ", datetime.now(), " клапан 1 закрыт")
+
+                if self.tank_2_empty:
+                    self.hau_handler.control_valve(2, 0)
+                    print("INFO: ", datetime.now(), " клапан 2 закрыт")
+
+                self.mixer_status = "waiting"
+                print("INFO: ", datetime.now(), " mixer_status: waiting")
+
+        # check "mixing" flag
+        if self.mixer_status == "mixing":
+            # check timer
+            if datetime.now() - self.mix_timer >= self.mixing_time:
+                print("INFO: ", datetime.now(), " Время перемешивания вышло. Перемешивание окончено")
+                # then time is come
+                # stop mixing
+                self.hau_handler.control_pump(4, 0)
+                print("INFO: ", datetime.now(), " насос 4 выключен")
+                self.mixer_status = "tank_is_empty"
+                print("INFO: ", datetime.now(), " mixer_status: tank_is_empty")
     def expel_bubbles(self):
         if (((datetime.now().time() > self.bubble_expulsion_time1) and (self.first_pumping_completed == False)) \
             or ((datetime.now().time() > self.bubble_expulsion_time2) and (self.second_pumping_completed == False))) \
@@ -146,17 +284,17 @@ class HAUNode(BaseNode):
             print("INFO: ", datetime.now(), " Флаги для прокачек КМ сброшены")
 
 
-    # цикл перемешивания и наполнения РВ
-    def fill_tank(self):
-        pass
-
     # цикл увлажнения
     # если давление падает ниже некоторой границы, начинаем пркоачку из активного РВ
     # помогите
     def humidify_root_module_1(self):
-        tank_num = self.active_tank_number
         pressure_sensor_num = 3
         valve_num = 6
+        if self.active_tank_number == 1:
+            pump_num = 2
+        else: # тогда self.active_tank_number == 2, иначе быть не может
+            pump_num = 1
+
         pressure = float(self.hau_handler.get_pressure(pressure_sensor_num))
         # если цикл пркоачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
         if (not self.humidify_active_1) and pressure < self.min_critical_pressure_in_root_module and (not self.humidify_sleeping):
@@ -174,8 +312,8 @@ class HAUNode(BaseNode):
             if not self.pumping_active and (datetime.now() - self.pumping_pause_start_time) >= self.pumpin_pause_time:
                 print("INFO: ", datetime.now(), "Начата подача дозы")
 
-                self.hau_handler.control_pump(tank_num, 1)
-                print("INFO: ", datetime.now(), " насос {} включен".format(tank_num))
+                self.hau_handler.control_pump(pump_num, 1)
+                print("INFO: ", datetime.now(), " насос {} включен".format(pump_num))
 
                 self.pumping_active = True
                 self.pumping_start_time = datetime.now()
@@ -183,8 +321,8 @@ class HAUNode(BaseNode):
             elif self.pumping_active and (datetime.now() - self.pumping_start_time) >= self.pumpin_time:
                 self.pump_active_time_counter += (datetime.now() - self.pumping_start_time) # добавляем время работы насоса в счетскик
 
-                self.hau_handler.control_pump(tank_num, 0)
-                print("INFO: ", datetime.now(), " насос {} выключен".format(tank_num))
+                self.hau_handler.control_pump(pump_num, 0)
+                print("INFO: ", datetime.now(), " насос {} выключен".format(pump_num))
 
                 self.pumping_active = False
                 self.pumping_pause_start_time = datetime.now()
@@ -211,9 +349,13 @@ class HAUNode(BaseNode):
 
     #точно такой же метод, как и предыдущий, но для другого КМ. Это было самым быстрым решением проблемы(навреное)
     def humidify_root_module_2(self):
-        tank_num = self.active_tank_number
         pressure_sensor_num = 4
         valve_num = 5
+        if self.active_tank_number == 1:
+            pump_num = 2
+        else: # тогда self.active_tank_number == 2, иначе быть не может
+            pump_num = 1
+
         pressure = float(self.hau_handler.get_pressure(pressure_sensor_num))
         # если цикл пркоачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
         if (not self.humidify_active_2) and pressure < self.min_critical_pressure_in_root_module and (not self.humidify_sleeping):
@@ -231,8 +373,8 @@ class HAUNode(BaseNode):
             if not self.pumping_active and (datetime.now() - self.pumping_pause_start_time) >= self.pumpin_pause_time:
                 print("INFO: ", datetime.now(), "Начата подача дозы")
 
-                self.hau_handler.control_pump(tank_num, 1)
-                print("INFO: ", datetime.now(), " насос {} включен".format(tank_num))
+                self.hau_handler.control_pump(pump_num, 1)
+                print("INFO: ", datetime.now(), " насос {} включен".format(pump_num))
 
                 self.pumping_active = True
                 self.pumping_start_time = datetime.now()
@@ -240,8 +382,8 @@ class HAUNode(BaseNode):
             elif self.pumping_active and (datetime.now() - self.pumping_start_time) >= self.pumpin_time:
                 self.pump_active_time_counter += (datetime.now() - self.pumping_start_time) # добавляем время работы насоса в счетскик
 
-                self.hau_handler.control_pump(tank_num, 0)
-                print("INFO: ", datetime.now(), " насос {} выключен".format(tank_num))
+                self.hau_handler.control_pump(pump_num, 0)
+                print("INFO: ", datetime.now(), " насос {} выключен".format(pump_num))
 
                 self.pumping_active = False
                 self.pumping_pause_start_time = datetime.now()
