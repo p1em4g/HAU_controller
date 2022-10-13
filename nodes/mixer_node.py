@@ -76,7 +76,7 @@ class HAUNode(BaseNode):
                 return
             else:
                 if tank_2_state >= self.tank_high_volume:
-                    print("INFO: ", datetime.datetime.now(), " РВ1 заполнен. Кол-во воды: {}".format(tank_1_state))
+                    print("INFO: ", datetime.datetime.now(), " РВ2 заполнен. Кол-во воды: {}".format(tank_1_state))
                     self.tank_2_empty = False
                     return
 
