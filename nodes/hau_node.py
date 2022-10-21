@@ -17,8 +17,17 @@ class HAUNode(BaseNode):
         self._annotation = "humidification and aeration unit"
 
         # cоздаем базу данных (если она не существует) с навзанием как в конфиге
-        db_handler = MySQLdbHandler(config.db_params)
-        db_handler.create_database()
+        self.db_handler = MySQLdbHandler(config.db_params)
+        self.db_handler.create_database()
+
+        # создадим базу данных для логов
+        self.db_handler.create_log_table("info_logs")
+        self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                    "INIT: Программа запущена. База данных создана.")
+
+        self.exp_note = "21.10.22 Планка посажена в 15 00. " \
+                        "Активен только КМ1. Метод для увлажнения КМ2 закомментирован"
+        self.db_handler.add_log_in_table("info_logs", "hau_node","INIT: exp_note: {}".format(self.exp_note))
 
         self.hau_handler = HAUHandler(
             name="hau_handler",
@@ -34,6 +43,8 @@ class HAUNode(BaseNode):
         self.hau_handler.control_valve(6, 0)
         print("INFO: ", datetime.now(),
               " Заданы начальные состояния клапанов. Клапан 3 открыт, 1,2,4-6 закрыты.")
+        self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                    "INIT: Заданы начальные состояния клапанов. Клапан 3 открыт, 1,2,4-6 закрыты.")
 
         # переменные для цикла прокачки КМ от пузырей
         self.bubble_expulsion_time1 = time(hour=5, minute=0, second=0) # время прокачки 1
@@ -41,14 +52,25 @@ class HAUNode(BaseNode):
         self.expel_bubbles_flag = False
         self.first_pumping_completed = False
         self.second_pumping_completed = False
-        self.expulsion_of_bubbles_pumping_time = timedelta(seconds=5)
+        self.expulsion_of_bubbles_pumping_time = timedelta(seconds=600) # время прокачки от пузырей 10 мин?
         self.start_time = datetime.now()
+
+        self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                    ("INIT: Время первой прокачик КМ от пузырей {}, "
+                                    "Время второй прокачки КМ от пузырей {}, "
+                                    "Время прокачки {} ").format(self.bubble_expulsion_time1,
+                                                                self.bubble_expulsion_time2,
+                                                                self.expulsion_of_bubbles_pumping_time))
 
         # переменные для миксера
         self.tank_low_volume = 40  # ml
-        self.tank_high_volume = 190  # ml
-        self.low_conductivity = 1.2  # mSm/cm временно понизим нижний порог
-        self.high_conductivity = 2.5  # mSm/cm
+        self.tank_high_volume = 160  # ml
+
+        self.tank_2_low_voltage = 2.45 # только для РВ2, т.к. он плохо отклаиброван
+        self.tank_2_high_voltage = 2.85  # только для РВ2, т.к. он плохо отклаиброван
+
+        self.low_conductivity = 1.5  # mSm/cm
+        self.high_conductivity = 2.5  # mSm/cm # не участвует в коде
         self.filling_time = timedelta(seconds=148)
         self.mixing_time = timedelta(seconds=461)
 
@@ -58,11 +80,20 @@ class HAUNode(BaseNode):
         # might be  "waiting", "mixing", "filling", "tank_is_empty"
         self.mix_timer = datetime.now()  # timer for counting time in mixing periods
 
+        self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                    ("INIT: Переменные в миксере: tank_low_volume = {}, tank_high_volume = {}, "
+                                    "tank_2_low_voltage = {},  tank_2_high_voltage = {}, low_conductivity = {}, "
+                                    "high_conductivity = {}, filling_time = {}, mixing_time = {}").format(
+                                        self.tank_low_volume, self.tank_high_volume, self.tank_2_low_voltage,
+                                        self.tank_2_high_voltage, self.low_conductivity, self.high_conductivity,
+                                        self.filling_time,self.mixing_time
+                                    ))
+
         # переменные для РВ
         self.active_tank_number = 1  # РВ A1 - это 1, РВ А5 - это 2
 
         # переменные для цикла увлажнения КМ
-        self.min_critical_pressure_in_root_module = 3.0 # !!!НАДО ВВЕСТИ АДЕКВАТНОЕ ЗНАЧЕНИЕ!!!
+        self.min_critical_pressure_in_root_module = 3.75 # !!!НАДО ВВЕСТИ АДЕКВАТНОЕ ЗНАЧЕНИЕ!!!
 
         self.humidify_active_1 = False  # показывает, активен ли сейчас цикл прокачки
         self.humidify_active_2 = False
@@ -76,7 +107,15 @@ class HAUNode(BaseNode):
         self.pumping_pause_active = False # показывает активна ли пауза (возможно, лишняя переменная)
 
         self.pump_active_time_counter = timedelta(seconds=0) # показывает сумарное время работы насоса
-        self.humidify_active_time = timedelta(seconds=296) # показывает, сколько времени в сумме должен проработать насос
+        self.humidify_active_time = timedelta(seconds=260) # 260 c - 70 ml показывает, сколько времени в сумме должен проработать насос
+
+        self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                    (
+                                        "INIT: min_critical_pressure_in_root_module = {}, pumpin_pause_time = {}, "
+                                     "pumpin_time = {}, pump_active_time_counter = {}, humidify_active_time = {}"
+                                     ).format(self.min_critical_pressure_in_root_module, self.pumpin_pause_time,
+                                              self.pumpin_time, self.pump_active_time_counter,
+                                              self.humidify_active_time))
 
         # после прокачки некоторое время игнорируем показания ДД и просто спим
         self.humidify_sleeping = False
@@ -121,32 +160,53 @@ class HAUNode(BaseNode):
             voltage = self.hau_handler.get_pressure(2)  # датчики давлений в РВ перепутаны
             tank_1_state = 175.4*voltage - 396.5  # unstable data from calibration experiment
             if tank_1_state <= self.tank_low_volume:
+                self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                            "MIXER: РВ1 опустошен. Кол-во воды: {}".format(tank_1_state))
                 print("INFO: ", datetime.now(), " РВ1 опустошен. Кол-во воды: {}".format(tank_1_state))
+
                 self.tank_1_empty = True
                 self.mixer_status = "tank_is_empty"
+
+                self.db_handler.add_log_in_table("info_logs", "hau_node","MIXER:  Активный РВ: 2")
                 print("INFO: ", datetime.now(), " Активный РВ: 2")
+
                 self.active_tank_number = 2
+
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER:  mixer_status: tank_is_empty.")
                 print("INFO: ", datetime.now(), " mixer_status: tank_is_empty.")
                 return
             else:
                 if tank_1_state >= self.tank_high_volume:
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: РВ1 заполнен. Кол-во воды: {}".format(tank_1_state))
                     print("INFO: ", datetime.now(), " РВ1 заполнен. Кол-во воды: {}".format(tank_1_state))
+
                     self.tank_1_empty = False
                     return
 
             voltage = self.hau_handler.get_pressure(1)
             tank_2_state = 175.4 * voltage - 396.5  # unstable data from calibration experiment
-            if tank_2_state <= self.tank_low_volume:
-                print("INFO: ", datetime.now(), " РВ2 опустошен. Кол-во воды: {}".format(tank_2_state))
+            if voltage <= self.tank_2_low_voltage: # РВ2 плохо отклаиброван, поэтому сравнимать будет с напряжением
+                self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                                 "MIXER: РВ2 опустошен. Кол-во воды: {} В".format(voltage))
+                print("INFO: ", datetime.now(), " РВ2 опустошен. Кол-во воды: {} В".format(voltage))
+
                 self.tank_2_empty = True
                 self.mixer_status = "tank_is_empty"
+
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER:  Активный РВ: 1")
                 print("INFO: ", datetime.now(), " Активный РВ: 1")
+
                 self.active_tank_number = 1
+
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER:  mixer_status: tank_is_empty.")
                 print("INFO: ", datetime.now(), " mixer_status: tank_is_empty.")
                 return
             else:
-                if tank_2_state >= self.tank_high_volume:
+                if voltage >= self.tank_2_high_voltage:
+                    self.db_handler.add_log_in_table(
+                        "info_logs", "hau_node", "MIXER: РВ2 заполнен. Кол-во воды: {}".format(tank_1_state))
                     print("INFO: ", datetime.now(), " РВ2 заполнен. Кол-во воды: {}".format(tank_1_state))
+
                     self.tank_2_empty = False
                     return
 
@@ -156,51 +216,75 @@ class HAUNode(BaseNode):
             e_volts = self.hau_handler.get_conductivity()
             e = 0.405/(0.0681*e_volts*e_volts - 0.813*e_volts + 2.2)  # unstable data from calibration experiment
             if e <= self.low_conductivity:
+                self.db_handler.add_log_in_table(
+                    "info_logs", "hau_node", "MIXER:  В камере смешения низкая электропроводность: {}".format(e))
                 print("INFO: ", datetime.now(), " В камере смешения низкая электропроводность: {}".format(e))
                 # it means that we need to add doze of concentrated nutrient solution
                 # firstly run N3 for 1 second - to add small dose of concentrated solution
                 self.hau_handler.control_pump(3, 1)
+
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: Насос 3 включен")
                 print("INFO: ", datetime.now(), " Насос 3 включен")
                 # wait 1 second
                 time_for_sleep.sleep(2)
                 # stop N3
                 self.hau_handler.control_pump(3, 0)
+
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: Насос 3 выключен")
                 print("INFO: ", datetime.now(), " Насос 3 выключен")
                 # then start mixing
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: Hачато перемешивание")
                 print("INFO: ", datetime.now(), " Hачато перемешивание")
+
                 self.hau_handler.control_pump(4, 1)
-                print("INFO: ", datetime.now(), " Насос 4 вкключен")
+
+                print("INFO: ", datetime.now(), " Насос 4 включен")
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: Насос 4 включен")
+
                 self.mix_timer = datetime.now()
                 self.mixer_status = "mixing"
+
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: mixer_status: mixing")
                 print("INFO: ", datetime.now(), " mixer_status: mixing")
                 # then wait in background
                 return
             else:
+                self.db_handler.add_log_in_table(
+                    "info_logs", "hau_node", "MIXER:  Электропроводность в камере смешения выше минимума: {}".format(e))
                 print("INFO: ", datetime.now(), " Электропроводность в камере смешения выше минимума: {}".format(e))
                 # solution is ready
                 # lets fill the tank
                 if self.tank_1_empty:
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: Начинаем закачку воды в РВ1")
                     print("INFO: ", datetime.now(), " Начинаем закачку воды в РВ1")
                     # open valve 1
                     self.hau_handler.control_valve(1, 1)
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER:  клапан 1 открыт")
                     print("INFO: ", datetime.now(), " клапан 1 открыт")
                     # start N5
                     self.hau_handler.control_pump(5, 1)
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: насос 5 включен")
                     print("INFO: ", datetime.now(), " насос 5 включен")
                     self.mix_timer = datetime.now()
                     self.mixer_status = "filling"
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: mixer_status: filling")
+                    print("INFO: ", datetime.now(), " mixer_status: filling")
                     return
 
                 if self.tank_2_empty:
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: Начинаем закачку воды в РВ2")
                     print("INFO: ", datetime.now(), " Начинаем закачку воды в РВ2")
                     # open valve 2
                     self.hau_handler.control_valve(2, 1)
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER:  клапан 2 открыт")
                     print("INFO: ", datetime.now(), " клапан 2 открыт")
                     # start N5
                     self.hau_handler.control_pump(5, 1)
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: насос 5 включен")
                     print("INFO: ", datetime.now(), " насос 5 включен")
                     self.mix_timer = datetime.now()
                     self.mixer_status = "filling"
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: mixer_status: filling")
                     print("INFO: ", datetime.now(), " mixer_status: filling")
                     return
 
@@ -212,64 +296,85 @@ class HAUNode(BaseNode):
             voltage = self.hau_handler.get_pressure(1)  # датчики давлений в РВ перепутаны
             tank_2_state = 175.4 * voltage - 396.5  # unstable data from calibration experiment
             if (datetime.now() - self.mix_timer >= self.filling_time) or (tank_1_state > self.tank_high_volume) \
-                    or (tank_2_state > self.tank_high_volume):
+                    or (voltage > self.tank_2_high_voltage):
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: Закачка в РВ окончена")
                 print("INFO: ", datetime.now(), " Закачка в РВ окончена")
                 # then time is come
                 # stop filling
                 self.hau_handler.control_pump(5, 0)
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: насос 5 выключен")
                 print("INFO: ", datetime.now(), " насос 5 выключен")
                 # close correct valve
                 if self.tank_1_empty:
                     self.hau_handler.control_valve(1, 0)
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: клапан 1 закрыт")
                     print("INFO: ", datetime.now(), " клапан 1 закрыт")
 
                 if self.tank_2_empty:
                     self.hau_handler.control_valve(2, 0)
+                    self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: клапан 2 закрыт")
                     print("INFO: ", datetime.now(), " клапан 2 закрыт")
 
                 self.mixer_status = "waiting"
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: mixer_status: waiting")
                 print("INFO: ", datetime.now(), " mixer_status: waiting")
 
         # check "mixing" flag
         if self.mixer_status == "mixing":
             # check timer
             if datetime.now() - self.mix_timer >= self.mixing_time:
+                self.db_handler.add_log_in_table(
+                    "info_logs", "hau_node", "MIXER: Время перемешивания вышло. Перемешивание окончено")
                 print("INFO: ", datetime.now(), " Время перемешивания вышло. Перемешивание окончено")
                 # then time is come
                 # stop mixing
                 self.hau_handler.control_pump(4, 0)
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: насос 4 выключен")
                 print("INFO: ", datetime.now(), " насос 4 выключен")
                 self.mixer_status = "tank_is_empty"
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "MIXER: tank_is_empty")
                 print("INFO: ", datetime.now(), " mixer_status: tank_is_empty")
     def expel_bubbles(self):
         if (((datetime.now().time() > self.bubble_expulsion_time1) and (self.first_pumping_completed == False)) \
             or ((datetime.now().time() > self.bubble_expulsion_time2) and (self.second_pumping_completed == False))) \
                 and (self.expel_bubbles_flag == False):
+            self.db_handler.add_log_in_table("info_logs", "hau_node", "EXPEL_BUBBLES: начинаем прокачку КМ от пузырей")
             print("INFO: ", datetime.now(), "начинаем прокачку КМ от пузырей")
 
             self.hau_handler.control_valve(5, 0)
+            self.db_handler.add_log_in_table("info_logs", "hau_node", "EXPEL_BUBBLES: клапан 5 закрыт")
             print("INFO: ", datetime.now(), " клапан 5 закрыт")
             self.hau_handler.control_valve(6, 0) # закрываем клапаны
+            self.db_handler.add_log_in_table("info_logs", "hau_node", "EXPEL_BUBBLES: клапан 6 закрыт")
             print("INFO: ", datetime.now(), " клапан 6 закрыт")
             self.hau_handler.control_pump(6, 1)
+            self.db_handler.add_log_in_table("info_logs", "hau_node", "EXPEL_BUBBLES: насос 6 включен")
             print("INFO: ", datetime.now(), " насос 6 включен")
             self.hau_handler.control_pump(7, 1)
+            self.db_handler.add_log_in_table("info_logs", "hau_node", "EXPEL_BUBBLES: насос 7 включен")
             print("INFO: ", datetime.now(), " насос 7 включен")
             self.expel_bubbles_flag = True
         elif (self.expel_bubbles_flag == True) \
                 and (datetime.now() - datetime.combine(date.today(), self.bubble_expulsion_time1)) > self.expulsion_of_bubbles_pumping_time:
             self.expel_bubbles_flag = False
             self.hau_handler.control_pump(6, 0)
+            self.db_handler.add_log_in_table("info_logs", "hau_node", "EXPEL_BUBBLES: насос 6 выключен")
             print("INFO: ", datetime.now(), " насос 6 выключен")
             self.hau_handler.control_pump(7, 0)
+            self.db_handler.add_log_in_table("info_logs", "hau_node", "EXPEL_BUBBLES: насос 7 выключен")
             print("INFO: ", datetime.now(), " насос 7 выключен")
 
             if self.first_pumping_completed == False:
                 self.first_pumping_completed = True
+                self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                                 "EXPEL_BUBBLES: Первая прокачка КМ от пузырей выполнена")
                 print("INFO: ", datetime.now(), " Первая прокачка КМ от пузырей выполнена")
             else:
                 self.second_pumping_completed = True
+                self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                                 "EXPEL_BUBBLES: Вторая прокачка КМ от пузырей выполнена")
                 print("INFO: ", datetime.now()," Вторая прокачка КМ от пузырей выполнена")
+
 
         # обновление флагов для прокачек
         if self.first_pumping_completed and self.second_pumping_completed \
@@ -277,6 +382,7 @@ class HAUNode(BaseNode):
                 and datetime.now().time() < self.bubble_expulsion_time1:
             self.first_pumping_completed = False
             self.second_pumping_completed = False
+            self.db_handler.add_log_in_table("info_logs", "hau_node", "EXPEL_BUBBLES: Флаги для прокачек КМ сброшены")
             print("INFO: ", datetime.now(), " Флаги для прокачек КМ сброшены")
 
 
@@ -294,10 +400,16 @@ class HAUNode(BaseNode):
         pressure = float(self.hau_handler.get_pressure(pressure_sensor_num))
         # если цикл пркоачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
         if (not self.humidify_active_1) and pressure < self.min_critical_pressure_in_root_module and (not self.humidify_sleeping):
+            self.db_handler.add_log_in_table(
+                "info_logs", "hau_node", "HUMIDIFY: Начат цикл увлажнения КМ c клапаном {}".format(valve_num))
             print("INFO: ", datetime.now(), "Начат цикл увлажнения КМ c клапаном {}".format(valve_num))
+            self.db_handler.add_log_in_table(
+                "info_logs", "hau_node", "HUMIDIFY: Давление в трубке: {}".format(pressure))
             print("INFO: ", datetime.now(), "Давление в трубке: {}".format(pressure))
             self.humidify_active_1 = True
             self.hau_handler.control_valve(valve_num, 1)
+            self.db_handler.add_log_in_table(
+                "info_logs", "hau_node", "HUMIDIFY: клапан {} открыт".format(valve_num))
             print("INFO: ", datetime.now(), " клапан {} открыт".format(valve_num))
 
             self.pumping_pause_start_time = datetime.now() - self.pumpin_pause_time  # костыль
@@ -306,9 +418,11 @@ class HAUNode(BaseNode):
         elif self.humidify_active_1 and self.pump_active_time_counter < self.humidify_active_time:
             # если насос выключен и время паузы между дозами прошло, то включаем насос и записываем время его включения
             if not self.pumping_active and (datetime.now() - self.pumping_pause_start_time) >= self.pumpin_pause_time:
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY: Начата подача дозы")
                 print("INFO: ", datetime.now(), "Начата подача дозы")
 
                 self.hau_handler.control_pump(pump_num, 1)
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY: насос {} включен".format(pump_num))
                 print("INFO: ", datetime.now(), " насос {} включен".format(pump_num))
 
                 self.pumping_active = True
@@ -319,17 +433,30 @@ class HAUNode(BaseNode):
 
                 self.hau_handler.control_pump(pump_num, 0)
                 print("INFO: ", datetime.now(), " насос {} выключен".format(pump_num))
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY: насос {} выключен".format(pump_num))
 
                 self.pumping_active = False
                 self.pumping_pause_start_time = datetime.now()
+
+                self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY: подача дозы закончена, начата пауза")
                 print("INFO: ", datetime.now(), "подача дозы закончена, начата пауза")
-                print("INFO: ", datetime.now(), "сумарное время работы насоса за текущий цикл увлажнения: ", self.pump_active_time_counter)
+                self.db_handler.add_log_in_table(
+                    "info_logs", "hau_node", "HUMIDIFY: сумарное время работы насоса"
+                                             " за текущий цикл увлажнения: {}".format(self.pump_active_time_counter))
+                print("INFO: ", datetime.now(), "сумарное время работы насоса "
+                                                "за текущий цикл увлажнения: {}".format(self.pump_active_time_counter))
         # если цикл прокачки активен и насос в сумме наработал больше, чем должен, то завершаем прокачку и начинаем спать
         elif self.humidify_active_1 and self.pump_active_time_counter >= self.humidify_active_time:
             self.hau_handler.control_valve(valve_num, 0)
+            self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY: клапан {} закрыт".format(valve_num))
             print("INFO: ", datetime.now(), " клапан {} закрыт".format(valve_num))
 
-            print("INFO: ", datetime.now(), "Увлажнение закончено, начат сон ", self.humidify_active_time, " секунд")
+            self.db_handler.add_log_in_table(
+                "info_logs", "hau_node",
+                "HUMIDIFY: Увлажнение закончено, начат сон {} секунд".format(self.humidify_active_time))
+            print("INFO: ", datetime.now(), "Увлажнение закончено, начат сон {} секунд".format(self.humidify_active_time))
+            self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                             "HUMIDIFY: Давление в трубке: {}".format(pressure))
             print("INFO: ", datetime.now(), "Давление в трубке: {}".format(pressure))
 
             self.humidify_active_1 = False
@@ -340,69 +467,96 @@ class HAUNode(BaseNode):
         # если мы спим и спим дольше положенного времени, то отключаем режим сна
         # время сна равно времени сумарной работы насоса?
         elif self.humidify_sleeping and (datetime.now() - self.humidify_sleeping_start_time) > self.humidify_active_time:
+            self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY: сон окончен")
             print("INFO: ", datetime.now(), "сон окончен")
             self.humidify_sleeping = False
 
     #точно такой же метод, как и предыдущий, но для другого КМ. Это было самым быстрым решением проблемы(навреное)
     def humidify_root_module_2(self):
-        pressure_sensor_num = 4
-        valve_num = 5
-        if self.active_tank_number == 1:
-            pump_num = 2
-        else: # тогда self.active_tank_number == 2, иначе быть не может
-            pump_num = 1
-
-        pressure = float(self.hau_handler.get_pressure(pressure_sensor_num))
-        # если цикл пркоачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
-        if (not self.humidify_active_2) and pressure < self.min_critical_pressure_in_root_module and (not self.humidify_sleeping):
-            print("INFO: ", datetime.now(), "Начат цикл увлажнения КМ c клапаном {}".format(valve_num))
-            print("INFO: ", datetime.now(), "Давление в трубке: {}".format(pressure))
-            self.humidify_active_2 = True
-            self.hau_handler.control_valve(valve_num, 1)
-            print("INFO: ", datetime.now(), " клапан {} открыт".format(valve_num))
-
-            self.pumping_pause_start_time = datetime.now() - self.pumpin_pause_time  # костыль
-
-        # если цикл пркоачки начат и насос в сумме проработал меньше чем надо то ...
-        elif self.humidify_active_2 and self.pump_active_time_counter < self.humidify_active_time:
-            # если насос выключен и время паузы между дозами прошло, то включаем насос и записываем время его включения
-            if not self.pumping_active and (datetime.now() - self.pumping_pause_start_time) >= self.pumpin_pause_time:
-                print("INFO: ", datetime.now(), "Начата подача дозы")
-
-                self.hau_handler.control_pump(pump_num, 1)
-                print("INFO: ", datetime.now(), " насос {} включен".format(pump_num))
-
-                self.pumping_active = True
-                self.pumping_start_time = datetime.now()
-            # если насос включен и время работы насоса больше, чем должно быть, выключаем насос
-            elif self.pumping_active and (datetime.now() - self.pumping_start_time) >= self.pumpin_time:
-                self.pump_active_time_counter += (datetime.now() - self.pumping_start_time) # добавляем время работы насоса в счетскик
-
-                self.hau_handler.control_pump(pump_num, 0)
-                print("INFO: ", datetime.now(), " насос {} выключен".format(pump_num))
-
-                self.pumping_active = False
-                self.pumping_pause_start_time = datetime.now()
-                print("INFO: ", datetime.now(), "подача дозы закончена, начата пауза")
-                print("INFO: ", datetime.now(), "сумарное время работы насоса за текущий цикл увлажнения: ", self.pump_active_time_counter)
-        # если цикл прокачки активен и насос в сумме наработал больше, чем должен, то завершаем прокачку и начинаем спать
-        elif self.humidify_active_2 and self.pump_active_time_counter >= self.humidify_active_time:
-            self.hau_handler.control_valve(valve_num, 0)
-            print("INFO: ", datetime.now(), " клапан {} закрыт".format(valve_num))
-
-            print("INFO: ", datetime.now(), "Увлажнение закончено, начат сон ", self.humidify_active_time, " секунд")
-            print("INFO: ", datetime.now(), "Давление в трубке: {}".format(pressure))
-
-            self.humidify_active_2 = False
-            self.humidify_sleeping = True
-            self.humidify_sleeping_start_time = datetime.now()
-            self.pump_active_time_counter = timedelta(seconds=0)
-
-        # если мы спим и спим дольше положенного времени, то отключаем режим сна
-        # время сна равно времени сумарной работы насоса?
-        elif self.humidify_sleeping and (datetime.now() - self.humidify_sleeping_start_time) > self.humidify_active_time:
-            print("INFO: ", datetime.now(), "сон окончен")
-            self.humidify_sleeping = False
+        pass
+        # pressure_sensor_num = 4
+        # valve_num = 5
+        # if self.active_tank_number == 1:
+        #     pump_num = 2
+        # else: # тогда self.active_tank_number == 2, иначе быть не может
+        #     pump_num = 1
+        #
+        # pressure = float(self.hau_handler.get_pressure(pressure_sensor_num))
+        # # если цикл пркоачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
+        # if (not self.humidify_active_2) and pressure < self.min_critical_pressure_in_root_module and (not self.humidify_sleeping):
+        #     self.db_handler.add_log_in_table("info_logs", "hau_node",
+        #                                      "HUMIDIFY_2: Начат цикл увлажнения КМ c клапаном {}".format(valve_num))
+        #     print("INFO: ", datetime.now(), "Начат цикл увлажнения КМ c клапаном {}".format(valve_num))
+        #     self.db_handler.add_log_in_table("info_logs", "hau_node",
+        #                                      "HUMIDIFY_2: Давление в трубке: {}".format(pressure))
+        #     print("INFO: ", datetime.now(), "Давление в трубке: {}".format(pressure))
+        #     self.humidify_active_2 = True
+        #     self.hau_handler.control_valve(valve_num, 1)
+        #     self.db_handler.add_log_in_table("info_logs", "hau_node",
+        #                                      "HUMIDIFY_2: клапан {} открыт".format(valve_num))
+        #     print("INFO: ", datetime.now(), " клапан {} открыт".format(valve_num))
+        #
+        #     self.pumping_pause_start_time = datetime.now() - self.pumpin_pause_time  # костыль
+        #
+        # # если цикл пркоачки начат и насос в сумме проработал меньше чем надо то ...
+        # elif self.humidify_active_2 and self.pump_active_time_counter < self.humidify_active_time:
+        #     # если насос выключен и время паузы между дозами прошло, то включаем насос и записываем время его включения
+        #     if not self.pumping_active and (datetime.now() - self.pumping_pause_start_time) >= self.pumpin_pause_time:
+        #         self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY_2: Начата подача дозы")
+        #         print("INFO: ", datetime.now(), "Начата подача дозы")
+        #
+        #         self.hau_handler.control_pump(pump_num, 1)
+        #         self.db_handler.add_log_in_table("info_logs", "hau_node",
+        #                                          "HUMIDIFY_2: насос {} включен".format(pump_num))
+        #         print("INFO: ", datetime.now(), " насос {} включен".format(pump_num))
+        #
+        #         self.pumping_active = True
+        #         self.pumping_start_time = datetime.now()
+        #     # если насос включен и время работы насоса больше, чем должно быть, выключаем насос
+        #     elif self.pumping_active and (datetime.now() - self.pumping_start_time) >= self.pumpin_time:
+        #         self.pump_active_time_counter += (datetime.now() - self.pumping_start_time) # добавляем время работы насоса в счетскик
+        #
+        #         self.hau_handler.control_pump(pump_num, 0)
+        #         self.db_handler.add_log_in_table("info_logs", "hau_node",
+        #                                          "HUMIDIFY_2: насос {} выключен".format(pump_num))
+        #         print("INFO: ", datetime.now(), " насос {} выключен".format(pump_num))
+        #
+        #         self.pumping_active = False
+        #         self.pumping_pause_start_time = datetime.now()
+        #         self.db_handler.add_log_in_table("info_logs", "hau_node",
+        #                                          "HUMIDIFY_2: подача дозы закончена, начата пауза")
+        #         print("INFO: ", datetime.now(), "подача дозы закончена, начата пауза")
+        #         self.db_handler.add_log_in_table(
+        #             "info_logs", "hau_node", "HUMIDIFY_2: сумарное время работы насоса "
+        #                                      "за текущий цикл увлажнения: {}".format(self.pump_active_time_counter))
+        #         print("INFO: ", datetime.now(), "сумарное время работы насоса "
+        #                                         "за текущий цикл увлажнения: {}".format(self.pump_active_time_counter))
+        # # если цикл прокачки активен и насос в сумме наработал больше, чем должен, то завершаем прокачку и начинаем спать
+        # elif self.humidify_active_2 and self.pump_active_time_counter >= self.humidify_active_time:
+        #     self.hau_handler.control_valve(valve_num, 0)
+        #     self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY_2: клапан {} закрыт".format(valve_num))
+        #     print("INFO: ", datetime.now(), " клапан {} закрыт".format(valve_num))
+        #
+        #     self.db_handler.add_log_in_table(
+        #         "info_logs", "hau_node",
+        #         "HUMIDIFY_2: Увлажнение закончено, начат сон {} секунд".format(self.humidify_active_time))
+        #     print("INFO: ", datetime.now(),
+        #           "Увлажнение закончено, начат сон {} секунд".format(self.humidify_active_time))
+        #     self.db_handler.add_log_in_table("info_logs", "hau_node",
+        #                                      "HUMIDIFY_2: Давление в трубке: {}".format(pressure))
+        #     print("INFO: ", datetime.now(), "Давление в трубке: {}".format(pressure))
+        #
+        #     self.humidify_active_2 = False
+        #     self.humidify_sleeping = True
+        #     self.humidify_sleeping_start_time = datetime.now()
+        #     self.pump_active_time_counter = timedelta(seconds=0)
+        #
+        # # если мы спим и спим дольше положенного времени, то отключаем режим сна
+        # # время сна равно времени сумарной работы насоса?
+        # elif self.humidify_sleeping and (datetime.now() - self.humidify_sleeping_start_time) > self.humidify_active_time:
+        #     self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY_2: сон окончен")
+        #     print("INFO: ", datetime.now(), "сон окончен")
+        #     self.humidify_sleeping = False
 
     def turn_off_all_pumps(self):
         self.hau_handler.control_pump(1,0)
@@ -413,6 +567,9 @@ class HAUNode(BaseNode):
         self.hau_handler.control_pump(6, 0)
         self.hau_handler.control_pump(7, 0)
         print("INFO: ", datetime.now(), "Произошло отключение всех насосов")
+        self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                         "turn_off_all_pumps: Произошло отключение всех насосов")
+        self.db_handler.add_log_in_table("info_logs", "hau_node", "PROGRAMM: Выполнение программы заверешно")
 
 if __name__ == "__main__":
     network = config.network
