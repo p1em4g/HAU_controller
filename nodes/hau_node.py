@@ -67,7 +67,7 @@ class HAUNode(BaseNode):
         self.tank_high_volume = 160  # ml
 
         self.tank_2_low_voltage = 2.45  # только для РВ2, т.к. он плохо отклаиброван
-        self.tank_2_high_voltage = 2.85  # только для РВ2, т.к. он плохо отклаиброван
+        self.tank_2_high_voltage = 2.70  # только для РВ2, т.к. он плохо отклаиброван
 
         self.low_conductivity = 1.5  # mSm/cm
         self.high_conductivity = 2.5  # mSm/cm # не участвует в коде
