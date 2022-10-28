@@ -205,8 +205,8 @@ class HAUNode(BaseNode):
             else:
                 if voltage >= self.tank_2_high_voltage:
                     self.db_handler.add_log_in_table(
-                        "info_logs", "hau_node", "MIXER: РВ2 заполнен. Кол-во воды: {}".format(tank_1_state))
-                    print("INFO: ", datetime.now(), " РВ2 заполнен. Кол-во воды: {}".format(tank_1_state))
+                        "info_logs", "hau_node", "MIXER: РВ2 заполнен. Показания датчика: {} В".format(voltage))
+                    print("INFO: ", datetime.now(), " РВ2 заполнен. Показания датчика: {} В".format(voltage))
 
                     self.tank_2_empty = False
                     return
