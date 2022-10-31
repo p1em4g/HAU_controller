@@ -17,8 +17,8 @@ class HAUNode(BaseNode):
         self._annotation = "humidification and aeration unit"
 
         # cоздаем базу данных (если она не существует) с навзанием как в конфиге
-        db_handler = MySQLdbHandler(config.db_params)
-        db_handler.create_database()
+        self.db_handler = MySQLdbHandler(config.db_params)
+        self.db_handler.create_database()
 
         self.hau_handler = HAUHandler(
             name="hau_handler",
@@ -30,7 +30,7 @@ class HAUNode(BaseNode):
                                          "INIT: Программа запущена. База данных создана.")
 
         self.state = "checking" # checking, mixing, pumping
-        self.low_conductivity = 1.5
+        self.low_conductivity = 3.27
         self.pumping = False
         self.mixing = True
         self.pumping_time = 143
@@ -42,8 +42,7 @@ class HAUNode(BaseNode):
         self.expulsion_of_bubbles_timer.start()
 
     def pump(self):
-        e_volts = self.hau_handler.get_conductivity()
-        e = 0.405 / (0.0681 * e_volts * e_volts - 0.813 * e_volts + 2.2)
+        e = self.hau_handler.get_conductivity()
         if e < self.low_conductivity and self.state == "checking":
             print("INFO: ", datetime.now(), "conductivity: {}".format(e))
             self.db_handler.add_log_in_table("info_logs", "hau_node", "conductivity: {}".format(e))
@@ -107,10 +106,26 @@ class HAUNode(BaseNode):
             print("INFO: ", datetime.now(), "state = mixing")
             self.db_handler.add_log_in_table("info_logs", "hau_node", "state = mixing")
 
+    def turn_off_all_pumps(self):
+        self.hau_handler.control_pump(1,0)
+        self.hau_handler.control_pump(2, 0)
+        self.hau_handler.control_pump(3, 0)
+        self.hau_handler.control_pump(4, 0)
+        self.hau_handler.control_pump(5, 0)
+        self.hau_handler.control_pump(6, 0)
+        self.hau_handler.control_pump(7, 0)
+        print("INFO: ", datetime.now(), "Произошло отключение всех насосов")
+        self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                         "turn_off_all_pumps: Произошло отключение всех насосов")
+        self.db_handler.add_log_in_table("info_logs", "hau_node", "PROGRAMM: Выполнение программы заверешно")
 
 if __name__ == "__main__":
     network = config.network
 
     n1 = HAUNode(network[0]['address'], list_of_nodes=network)
-    n1.start()
-    n1.join()
+
+    try:
+        n1.start()
+        n1.join()
+    finally:
+        n1.turn_off_all_pumps()
