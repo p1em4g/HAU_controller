@@ -41,7 +41,7 @@ class HAUNode(BaseNode):
     def pump(self):
         if self.pumping == False and self.mixing == True and (datetime.now() - self.mixing_start_time) >= self.mixing_time:
             self.hau_handler.control_pump(4, 0)
-            print("INFO: ", datetime.now(), " насос 4 вылючен")
+            print("INFO: ", datetime.now(), " насос 4 выkлючен")
             self.mixing = False
 
             conductivity = self.hau_handler.get_conductivity()
