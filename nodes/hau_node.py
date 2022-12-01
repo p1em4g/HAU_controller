@@ -40,10 +40,28 @@ class HAUNode(BaseNode):
         self.hau_handler.control_valve(4, 0)
         self.hau_handler.control_valve(5, 0)
         self.hau_handler.control_valve(6, 0)
+        self.hau_handler.control_pump(1, 0)
+        self.hau_handler.control_pump(2, 0)
+        self.hau_handler.control_pump(3, 0)
+        self.hau_handler.control_pump(4, 0)
+        self.hau_handler.control_pump(5, 0)
+        self.hau_handler.control_pump(6, 0)
+        self.hau_handler.control_pump(7, 0)
         print("INFO: ", datetime.now(),
-              " Заданы начальные состояния клапанов. Клапан 3 открыт, 1,2,4-6 закрыты.")
+              " Заданы начальные состояния клапанов и насосов. Клапан 3 открыт, 1,2,4-6 закрыты. Все насосы отключены.")
         self.db_handler.add_log_in_table("info_logs", "hau_node",
-                                    "INIT: Заданы начальные состояния клапанов. Клапан 3 открыт, 1,2,4-6 закрыты.")
+                                    "INIT:  Заданы начальные состояния клапанов и насосов. Клапан 3 открыт, "
+                                    "1,2,4-6 закрыты. Все насосы отключены.")
+
+        # Пауза для возможности экстренного отключения системы
+        print("INFO: ", datetime.now(), "Далее ПАУЗА 5 секунд. (sleep)")
+        self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                         "INIT:  Далее ПАУЗА 5 секунд. (sleep)")
+        time_for_sleep.sleep(5)
+
+        print("INFO: ", datetime.now(), "Пауза закончена")
+        self.db_handler.add_log_in_table("info_logs", "hau_node",
+                                         "INIT:  Пауза закончена")
 
         # переменные для цикла прокачки КМ от пузырей
         self.bubble_expulsion_time1 = time(hour=5, minute=0, second=0) # время прокачки 1
