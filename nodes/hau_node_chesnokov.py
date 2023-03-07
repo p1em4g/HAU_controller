@@ -148,7 +148,6 @@ class HAUNode(BaseNode):
         self.control_timer.start()
 
     def control(self):
-        self.mixer()
         # если какой то цикл активен, то продолжаем крутить именно его
         if self.humidify_active_1:
             self.humidify_root_module_1()
