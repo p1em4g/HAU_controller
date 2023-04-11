@@ -25,7 +25,7 @@ class HAUNode(BaseNode):
         self.db_handler.add_log_in_table("info_logs", "hau_node",
                                     "INIT: Программа запущена. База данных создана.")
 
-        self.exp_note = "24.01.2023: посадка первой планки"
+        self.exp_note = "07.04.2023: посадка первой планки"
         self.db_handler.add_log_in_table("info_logs", "hau_node","INIT: exp_note: {}".format(self.exp_note))
 
         self.hau_handler = HAUHandler(
@@ -79,14 +79,6 @@ class HAUNode(BaseNode):
 
         self.pump_active_time_counter = 0  # показывает сумарное время работы насоса
         self.humidify_active_time = 149  # 297 c - 80 ml, 149 с - 40 мл показывает, сколько времени в сумме должен проработать насос
-
-        self.db_handler.add_log_in_table("info_logs", "hau_node",
-                                    (
-                                        "INIT: min_critical_pressure_in_root_module = {}, pumpin_pause_time = {}, "
-                                     "pumpin_time = {}, pump_active_time_counter = {}, humidify_active_time = {}"
-                                     ).format(self.min_critical_pressure_in_root_module_1, self.pumping_pause_time,
-                                              self.pumping_time, self.pump_active_time_counter,
-                                              self.humidify_active_time))
 
 
     def custom_preparation(self):
@@ -151,7 +143,7 @@ class HAUNode(BaseNode):
 
 
     def expel_bubbles(self):
-        if datetime.now().time() == self.bubble_expulsion_time1 or datetime.now().time() == self.bubble_expulsion_time2:
+        if ((datetime.now().time() >= self.bubble_expulsion_time1) and (datetime.now().time() <= (self.bubble_expulsion_time1 + timedelta(minutes=10))) or ((datetime.now().time() >= self.bubble_expulsion_time2) and (datetime.now().time() <= (self.bubble_expulsion_time2 + timedelta(minutes=10))))):
             self.hau_handler.control_pump(3, 0)
 
             self.hau_handler.control_valve(5, 0)
