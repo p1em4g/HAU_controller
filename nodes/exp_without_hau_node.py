@@ -99,8 +99,6 @@ class HAUNode(BaseNode):
                 self.humidify_status_1 = "humidify"
                 print("Начат цикл улажнения для КМ1")
                 return
-        else:
-            return
 
         if self.humidify_status_1 == "humidify":
             if self.pump_active_time_counter <= self.humidify_active_time:
@@ -128,8 +126,6 @@ class HAUNode(BaseNode):
                 self.humidify_status_2 = "humidify"
                 print("Начат цикл увлажнения для КМ2")
                 return
-        else:
-            return
 
         if self.humidify_status_2 == "humidify":
             if self.pump_active_time_counter <= self.humidify_active_time:
