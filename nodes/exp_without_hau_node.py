@@ -143,7 +143,7 @@ class HAUNode(BaseNode):
 
 
     def expel_bubbles(self):
-        if ((datetime.now().time() >= self.bubble_expulsion_time1) and (datetime.now().time() <= (self.bubble_expulsion_time1 + timedelta(minutes=10))) or ((datetime.now().time() >= self.bubble_expulsion_time2) and (datetime.now().time() <= (self.bubble_expulsion_time2 + timedelta(minutes=10))))):
+        if ((datetime.now().time() >= self.bubble_expulsion_time1) and (datetime.now().time() <= time(hour=5, minute=10, second=0)) or ((datetime.now().time() >= self.bubble_expulsion_time2) and (datetime.now().time() <= time(hour=5, minute=10, second=0)))):
             self.hau_handler.control_pump(3, 0)
 
             self.hau_handler.control_valve(5, 0)
