@@ -97,6 +97,7 @@ class HAUNode(BaseNode):
         if self.humidify_status_1 == "wait":
             if self.hau_handler.get_pressure(sensor_num) < self.min_critical_pressure_in_root_module:
                 self.humidify_status_1 = "humidify"
+                print("Начат цикл улажнения для КМ1")
                 return
         else:
             return
@@ -106,8 +107,10 @@ class HAUNode(BaseNode):
 
                 self.hau_handler.control_valve(valve_num, 1)
                 self.hau_handler.control_pump(3, 1)
+                print("Насос 3 вкл (для КМ1)")
                 time_for_sleep.sleep(self.pumping_time)
                 self.hau_handler.control_pump(3, 0)
+                print("Насос 3 выкл (для КМ1)")
                 self.hau_handler.control_valve(valve_num, 0)
                 self.pump_active_time_counter += self.pumping_time
                 time_for_sleep.sleep(self.pumping_pause_time)
@@ -115,13 +118,15 @@ class HAUNode(BaseNode):
             else:
                 self.pump_active_time_counter = 0
                 self.humidify_status_1 = "wait"
+                print("Цикл увлажнения для КМ1 окончен, переход в режим ожидания")
 
     def humidify_2(self):
-        valve_num = 6
-        sensor_num = 3
+        valve_num = 5
+        sensor_num = 4
         if self.humidify_status_2 == "wait":
             if self.hau_handler.get_pressure(sensor_num) < self.min_critical_pressure_in_root_module:
                 self.humidify_status_2 = "humidify"
+                print("Начат цикл увлажнения для КМ2")
                 return
         else:
             return
@@ -131,8 +136,10 @@ class HAUNode(BaseNode):
 
                 self.hau_handler.control_valve(valve_num, 1)
                 self.hau_handler.control_pump(3, 1)
+                print("Насос 3 вкл (для КМ2)")
                 time_for_sleep.sleep(self.pumping_time)
                 self.hau_handler.control_pump(3, 0)
+                print("Насос 3 выкл (для КМ2)")
                 self.hau_handler.control_valve(valve_num, 0)
                 self.pump_active_time_counter += self.pumping_time
                 time_for_sleep.sleep(self.pumping_pause_time)
@@ -140,6 +147,7 @@ class HAUNode(BaseNode):
             else:
                 self.pump_active_time_counter = 0
                 self.humidify_status_2 = "wait"
+                print("Цикл увлажнения для КМ2 окончен, перехо дв режим ожидания")
 
 
     def expel_bubbles(self):
