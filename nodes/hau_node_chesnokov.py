@@ -16,7 +16,7 @@ class HAUNode(BaseNode):
         super().__init__(endpoint, list_of_nodes, is_daemon)
         self._annotation = "humidification and aeration unit"
 
-        # cоздаем базу данных (если она не существует) с навзанием как в конфиге
+        # cоздаём базу данных (если она не существует) с названием как в конфиге
         self.db_handler = MySQLdbHandler(config.db_params)
         self.db_handler.create_database()
 
@@ -73,7 +73,7 @@ class HAUNode(BaseNode):
         self.start_time = datetime.now()
 
         self.db_handler.add_log_in_table("info_logs", "hau_node",
-                                    ("INIT: Время первой прокачик КМ от пузырей {}, "
+                                    ("INIT: Время первой прокачки КМ от пузырей {}, "
                                     "Время второй прокачки КМ от пузырей {}, "
                                     "Время прокачки {} ").format(self.bubble_expulsion_time1,
                                                                 self.bubble_expulsion_time2,
@@ -83,9 +83,8 @@ class HAUNode(BaseNode):
         self.tank_low_volume = 30  # ml
         self.tank_high_volume = 110  # ml
 
-        self.tank_2_low_voltage = 2.40  # только для РВ2, т.к. он плохо отклаиброван
-        self.tank_2_high_voltage = 2.75  # только для РВ2, т.к. он плохо отклаиброван
-
+        self.tank_2_low_voltage = 2.40  # только для РВ2, т.к. он плохо откалиброван
+        self.tank_2_high_voltage = 2.75  # только для РВ2, т.к. он плохо откалиброван
         self.low_conductivity = 1.2  # mSm/cm
         self.high_conductivity = 1.4  # mSm/cm # не участвует в коде
         self.filling_time = timedelta(seconds=148)
@@ -110,8 +109,8 @@ class HAUNode(BaseNode):
         self.active_tank_number = 1  # РВ A1 - это 1, РВ А5 - это 2
 
         # переменные для цикла увлажнения КМ
-        self.min_critical_pressure_in_root_module_1 = 4.37  # 3,68 В соответсвует -0,75 кПа в КМ1
-        self.min_critical_pressure_in_root_module_2 = 4.37  # 3,42 В соответсвует -0,75 кПа в КМ2
+        self.min_critical_pressure_in_root_module_1 = 4.37  # 3,68 В соответствует -0,75 кПа в КМ1
+        self.min_critical_pressure_in_root_module_2 = 4.37  # 3,42 В соответствует -0,75 кПа в КМ2
 
         self.humidify_active_1 = False  # показывает, активен ли сейчас цикл прокачки
         self.humidify_active_2 = False
@@ -119,12 +118,12 @@ class HAUNode(BaseNode):
         self.pumpin_pause_time = timedelta(seconds=9)       # время паузы между дозами
         self.pumpin_time = timedelta(seconds=6)  # время закачки дозы
 
-        self.pumping_active = False  # показыывет, включен ли насос
-        self.pumping_start_time = None  # показывает время послежнего запуска насоса
-        self.pumping_pause_start_time = None  # показывает время начала послежней паузы
+        self.pumping_active = False  # показывает, включен ли насос
+        self.pumping_start_time = None  # показывает время последнего запуска насоса
+        self.pumping_pause_start_time = None  # показывает время начала последней паузы
         self.pumping_pause_active = False  # показывает активна ли пауза (возможно, лишняя переменная)
 
-        self.pump_active_time_counter = timedelta(seconds=0)  # показывает сумарное время работы насоса
+        self.pump_active_time_counter = timedelta(seconds=0)  # показывает суммарное время работы насоса
         self.humidify_active_time = timedelta(seconds=149)  # 297 c - 80 ml, 149 с - 40 мл показывает, сколько времени в сумме должен проработать насос
 
         self.db_handler.add_log_in_table("info_logs", "hau_node",
@@ -219,7 +218,7 @@ class HAUNode(BaseNode):
 
 
     # цикл увлажнения
-    # если давление падает ниже некоторой границы, начинаем пркоачку из активного РВ
+    # если давление падает ниже некоторой границы, начинаем прокачку из активного РВ
     # помогите
     def humidify_root_module_1(self):
         pressure_sensor_num = 3
@@ -227,7 +226,7 @@ class HAUNode(BaseNode):
         pump_num = 1
 
         pressure = float(self.hau_handler.get_pressure(pressure_sensor_num))
-        # если цикл пркоачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
+        # если цикл прокачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
         if (not self.humidify_active_1) and pressure < self.min_critical_pressure_in_root_module_1 and (not self.humidify_sleeping):
             self.db_handler.add_log_in_table(
                 "info_logs", "hau_node", "HUMIDIFY: Начат цикл увлажнения КМ c клапаном {}".format(valve_num))
@@ -243,7 +242,7 @@ class HAUNode(BaseNode):
 
             self.pumping_pause_start_time = datetime.now() - self.pumpin_pause_time  # костыль
 
-        # если цикл пркоачки начат и насос в сумме проработал меньше чем надо то ...
+        # если цикл прокачки начат и насос в сумме проработал меньше чем надо то ...
         elif self.humidify_active_1 and self.pump_active_time_counter < self.humidify_active_time:
             # если насос выключен и время паузы между дозами прошло, то включаем насос и записываем время его включения
             if not self.pumping_active and (datetime.now() - self.pumping_pause_start_time) >= self.pumpin_pause_time:
@@ -260,7 +259,7 @@ class HAUNode(BaseNode):
                 self.pumping_start_time = datetime.now()
             # если насос включен и время работы насоса больше, чем должно быть, выключаем насос
             elif self.pumping_active and (datetime.now() - self.pumping_start_time) >= self.pumpin_time:
-                self.pump_active_time_counter += (datetime.now() - self.pumping_start_time) # добавляем время работы насоса в счетскик
+                self.pump_active_time_counter += (datetime.now() - self.pumping_start_time) # добавляем время работы насоса в счётчик
 
                 self.hau_handler.control_pump(5,0)
                 self.hau_handler.control_pump(pump_num, 0)
@@ -275,9 +274,9 @@ class HAUNode(BaseNode):
                 self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY: подача дозы закончена, начата пауза")
                 print("INFO: ", datetime.now(), "подача дозы закончена, начата пауза")
                 self.db_handler.add_log_in_table(
-                    "info_logs", "hau_node", "HUMIDIFY: сумарное время работы насоса"
+                    "info_logs", "hau_node", "HUMIDIFY: суммарное время работы насоса"
                                              " за текущий цикл увлажнения: {}".format(self.pump_active_time_counter))
-                print("INFO: ", datetime.now(), "сумарное время работы насоса "
+                print("INFO: ", datetime.now(), "суммарное время работы насоса "
                                                 "за текущий цикл увлажнения: {}".format(self.pump_active_time_counter))
         # если цикл прокачки активен и насос в сумме наработал больше, чем должен, то завершаем прокачку и начинаем спать
         elif self.humidify_active_1 and self.pump_active_time_counter >= self.humidify_active_time:
@@ -299,20 +298,20 @@ class HAUNode(BaseNode):
             self.pump_active_time_counter = timedelta(seconds=0)
 
         # если мы спим и спим дольше положенного времени, то отключаем режим сна
-        # время сна равно времени сумарной работы насоса?
+        # время сна равно времени суммарной работы насоса?
         elif self.humidify_sleeping and (datetime.now() - self.humidify_sleeping_start_time) > self.humidify_active_time:
             self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY: сон окончен")
             print("INFO: ", datetime.now(), "сон окончен")
             self.humidify_sleeping = False
 
-    #точно такой же метод, как и предыдущий, но для другого КМ. Это было самым быстрым решением проблемы(навреное)
+    #точно такой же метод, как и предыдущий, но для другого КМ. Это было самым быстрым решением проблемы(наверное)
     def humidify_root_module_2(self):
         pressure_sensor_num = 4
         valve_num = 5
         pump_num = 1
 
         pressure = float(self.hau_handler.get_pressure(pressure_sensor_num))
-        # если цикл пркоачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
+        # если цикл прокачки неактивен и давление ниже критического и мы не спим, то говорим что цикл прокачки начат
         if (not self.humidify_active_2) and pressure < self.min_critical_pressure_in_root_module_2 and (not self.humidify_sleeping):
             self.db_handler.add_log_in_table("info_logs", "hau_node",
                                              "HUMIDIFY_2: Начат цикл увлажнения КМ c клапаном {}".format(valve_num))
@@ -328,7 +327,7 @@ class HAUNode(BaseNode):
 
             self.pumping_pause_start_time = datetime.now() - self.pumpin_pause_time  # костыль
 
-        # если цикл пркоачки начат и насос в сумме проработал меньше чем надо то ...
+        # если цикл прокачки начат и насос в сумме проработал меньше чем надо то ...
         elif self.humidify_active_2 and self.pump_active_time_counter < self.humidify_active_time:
             # если насос выключен и время паузы между дозами прошло, то включаем насос и записываем время его включения
             if not self.pumping_active and (datetime.now() - self.pumping_pause_start_time) >= self.pumpin_pause_time:
@@ -347,7 +346,7 @@ class HAUNode(BaseNode):
                 self.pumping_start_time = datetime.now()
             # если насос включен и время работы насоса больше, чем должно быть, выключаем насос
             elif self.pumping_active and (datetime.now() - self.pumping_start_time) >= self.pumpin_time:
-                self.pump_active_time_counter += (datetime.now() - self.pumping_start_time) # добавляем время работы насоса в счетскик
+                self.pump_active_time_counter += (datetime.now() - self.pumping_start_time) # добавляем время работы насоса в счётчик
 
                 self.hau_handler.control_pump(5,1)
                 self.hau_handler.control_pump(pump_num, 0)
@@ -363,9 +362,9 @@ class HAUNode(BaseNode):
                                                  "HUMIDIFY_2: подача дозы закончена, начата пауза")
                 print("INFO: ", datetime.now(), "подача дозы закончена, начата пауза")
                 self.db_handler.add_log_in_table(
-                    "info_logs", "hau_node", "HUMIDIFY_2: сумарное время работы насоса "
+                    "info_logs", "hau_node", "HUMIDIFY_2: суммарное время работы насоса "
                                              "за текущий цикл увлажнения: {}".format(self.pump_active_time_counter))
-                print("INFO: ", datetime.now(), "сумарное время работы насоса "
+                print("INFO: ", datetime.now(), "суммарное время работы насоса "
                                                 "за текущий цикл увлажнения: {}".format(self.pump_active_time_counter))
         # если цикл прокачки активен и насос в сумме наработал больше, чем должен, то завершаем прокачку и начинаем спать
         elif self.humidify_active_2 and self.pump_active_time_counter >= self.humidify_active_time:
@@ -388,7 +387,7 @@ class HAUNode(BaseNode):
             self.pump_active_time_counter = timedelta(seconds=0)
 
         # если мы спим и спим дольше положенного времени, то отключаем режим сна
-        # время сна равно времени сумарной работы насоса?
+        # время сна равно времени суммарной работы насоса?
         elif self.humidify_sleeping and (datetime.now() - self.humidify_sleeping_start_time) > self.humidify_active_time:
             self.db_handler.add_log_in_table("info_logs", "hau_node", "HUMIDIFY_2: сон окончен")
             print("INFO: ", datetime.now(), "сон окончен")
@@ -405,7 +404,7 @@ class HAUNode(BaseNode):
         print("INFO: ", datetime.now(), "Произошло отключение всех насосов")
         self.db_handler.add_log_in_table("info_logs", "hau_node",
                                          "turn_off_all_pumps: Произошло отключение всех насосов")
-        self.db_handler.add_log_in_table("info_logs", "hau_node", "PROGRAMM: Выполнение программы заверешно")
+        self.db_handler.add_log_in_table("info_logs", "hau_node", "PROGRAMM: Выполнение программы завершено")
 
 if __name__ == "__main__":
     network = config.network
