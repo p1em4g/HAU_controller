@@ -16,7 +16,7 @@ class HAUNode(BaseNode):
         super().__init__(endpoint, list_of_nodes, is_daemon)
         self._annotation = "humidification and aeration unit"
 
-        # cоздаем базу данных (если она не существует) с навзанием как в конфиге
+        # cоздаем базу данных (если она не существует) с названием как в конфиге
         self.db_handler = MySQLdbHandler(config.db_params)
         self.db_handler.create_database()
 
@@ -33,7 +33,7 @@ class HAUNode(BaseNode):
         )
         self.add_device(self.hau_handler)
 
-        # зададим начальное положение клапанов
+        # задаём начальное положение клапанов
         self.hau_handler.control_valve(1, 0)
         self.hau_handler.control_valve(2, 0)
         self.hau_handler.control_valve(3, 1)
@@ -71,14 +71,14 @@ class HAUNode(BaseNode):
         # переменные для цикла увлажнения КМ
         self.humidify_status_1 = "wait" # wait, humidify
         self.humidify_status_2 = "wait"  # wait, humidify
-        self.min_critical_pressure_in_root_module = 4.37  # 3,68 В соответсвует -0,75 кПа в КМ1
+        self.min_critical_pressure_in_root_module = 4.37  # 3,68 В соответствует -0,75 кПа в КМ1
 
 
         self.pumping_pause_time = 9  # время паузы между дозами (seconds)
         self.pumping_time = 6 # время закачки дозы (seconds)
 
-        self.pump_active_time_counter = 0  # показывает сумарное время работы насоса
-        self.humidify_active_time = 149  # 297 c - 80 ml, 149 с - 40 мл показывает, сколько времени в сумме должен проработать насос
+        self.pump_active_time_counter = 0  # показывает суммарное время работы насоса
+        self.humidify_active_time = 149  # 297 c - 80 мл, 149 с - 40 мл показывает, сколько времени в сумме должен проработать насос
 
 
     def custom_preparation(self):
@@ -97,7 +97,7 @@ class HAUNode(BaseNode):
         if self.humidify_status_1 == "wait":
             if self.hau_handler.get_pressure(sensor_num) < self.min_critical_pressure_in_root_module:
                 self.humidify_status_1 = "humidify"
-                print("Начат цикл улажнения для КМ1")
+                print("Начат цикл увлажнения для КМ1")
                 return
 
         if self.humidify_status_1 == "humidify":
@@ -143,7 +143,7 @@ class HAUNode(BaseNode):
             else:
                 self.pump_active_time_counter = 0
                 self.humidify_status_2 = "wait"
-                print("Цикл увлажнения для КМ2 окончен, перехо дв режим ожидания")
+                print("Цикл увлажнения для КМ2 окончен, переход в режим ожидания")
 
 
     def expel_bubbles(self):
@@ -175,7 +175,7 @@ class HAUNode(BaseNode):
         print("INFO: ", datetime.now(), "Произошло отключение всех насосов")
         self.db_handler.add_log_in_table("info_logs", "hau_node",
                                          "turn_off_all_pumps: Произошло отключение всех насосов")
-        self.db_handler.add_log_in_table("info_logs", "hau_node", "PROGRAMM: Выполнение программы заверешно")
+        self.db_handler.add_log_in_table("info_logs", "hau_node", "PROGRAMM: Выполнение программы завершено")
 
 if __name__ == "__main__":
     network = config.network
