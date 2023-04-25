@@ -15,7 +15,7 @@ class HAUNode(BaseNode):
         super().__init__(endpoint, list_of_nodes, is_daemon)
         self._annotation = "humidification and aeration unit"
 
-        # cоздаем базу данных (если она не существует) с навзанием как в конфиге
+        #cоздаем базу данных (если она не существует) с названием как в конфигурационном файле
         db_handler = MySQLdbHandler(config.db_params)
         db_handler.create_database()
 
