@@ -17,7 +17,7 @@ class HAUNode(BaseNode):
         super().__init__(endpoint, list_of_nodes, is_daemon)
         self._annotation = "humidification and aeration unit"
 
-        # cоздаем базу данных (если она не существует) с навзанием как в конфиге
+        # cоздаём базу данных (если она не существует) с названием как в конфиге
         db_handler = MySQLdbHandler(config.db_params)
         db_handler.create_database()
 
@@ -99,16 +99,16 @@ class HAUNode(BaseNode):
                 # it means that we need to add doze of concentrated nutrient solution
                 # firstly run N3 for 1 second - to add small dose of concentrated solution
                 self.hau_handler.control_pump(3, 1)
-                print("INFO: ", datetime.datetime.now(), " асос 3 включен")
+                print("INFO: ", datetime.datetime.now(), " Насос 3 включен")
                 # wait 1 second
                 time.sleep(1)
                 # stop N3
                 self.hau_handler.control_pump(3, 0)
                 print("INFO: ", datetime.datetime.now(), " Насос 3 выключен")
                 # then start mixing
-                print("INFO: ", datetime.datetime.now(), " Hачато перемешивание")
+                print("INFO: ", datetime.datetime.now(), " Начинаем перемешивание")
                 self.hau_handler.control_pump(4, 1)
-                print("INFO: ", datetime.datetime.now(), " Насос 4 вкключен")
+                print("INFO: ", datetime.datetime.now(), " Насос 4 включен")
                 self.mix_timer = datetime.datetime.now()
                 self.mixer_status = "mixing"
                 print("INFO: ", datetime.datetime.now(), " mixer_status: mixing")
