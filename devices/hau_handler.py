@@ -109,7 +109,7 @@ class HAUHandler(BaseDevice):
         )
         self.add_command(get_conductivity)
 
-        # команда для записи конфигурационных параметров для платы кондуктомтера (хз что это значит)
+        # команда для записи конфигурационных параметров для платы кондуктометра (указывает его величины измерения, минимумы и максимумы)
         write_conductometer_params = Command(
             name="write_conductometer_params",
             annotation="hz chto eto, udachi",
@@ -297,7 +297,7 @@ class HAUHandler(BaseDevice):
             self._status = "error\n{}".format(e)
             return e
 
-    # метод для записи конфигурационных параметров для платы кондуктомтера (хз что это значит)
+    # метод для записи конфигурационных параметров для платы кондуктометра (инициализация процессов, для получения нулевой точки)
     def conductometer_params_writer(self, arg):
         try:
             command = "w{}\n".format(arg)
